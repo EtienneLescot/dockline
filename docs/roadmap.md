@@ -4,25 +4,11 @@ This roadmap keeps Dockline focused on its wedge: a capability-aware connector l
 
 Only remaining or active work is listed here. Completed items are removed from the main checklist once they land.
 
-## Phase 0 - Stabilize Core
-
-Goal: make the minimal public API credible.
-
-- Add a small provider capability matrix.
-- Add a complete minimal CLI example.
-
-Deliverable: `@dockline/core` is clean, typed, tested, and honest about its boundaries.
-
 ## Phase 1 - MVP Wedge
 
 Goal: prove immediate usefulness with a small surface area.
 
 - Harden `@dockline/openai-compatible` beyond the current contract tests.
-- Finalize `@dockline/openrouter` with provider-specific tests.
-- Add examples for:
-  - OpenRouter
-  - local OpenAI-compatible endpoint
-  - simple agent/workflow caller
 - Publish `0.1.0-alpha.0` to npm.
 
 Deliverable: a JS/TS app can switch between OpenRouter and a local endpoint without rewriting its agent logic.
@@ -96,17 +82,16 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 
 ## Immediate Tickets
 
-1. Add a small provider capability matrix.
-2. Add OpenRouter provider-specific tests.
-3. Add a complete minimal CLI example.
-4. Add a simple agent/workflow caller example.
-5. Prepare npm publication checks for `0.1.0-alpha.0`.
+1. Harden `@dockline/openai-compatible` beyond the current contract tests.
+2. Decide whether to publish `0.1.0-alpha.0` now or after one more hardening pass.
+3. Add `provider.testConnection()` design and first implementation.
+4. Add `provider.listModels()` design and first implementation where cheap.
+5. Start provider/model capability profiles where maintainable.
 
 ## Current Focus
 
 Next autonomous batch:
 
-- Capability matrix.
-- OpenRouter tests.
-- CLI and workflow examples.
-- npm publish readiness.
+- OpenAI-compatible hardening.
+- Provider discovery shape (`testConnection`, `listModels`).
+- Capability profile design.

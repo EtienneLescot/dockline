@@ -30,6 +30,7 @@
     "build": "tsc -b packages/*",
     "typecheck": "tsc -b packages/* --pretty false",
     "test": "node --test",
+    "pack:dry-run": "npm pack --dry-run --workspaces",
     "clean": "find packages -name dist -type d -prune -exec rm -rf {} +"
   },
   "devDependencies": {
