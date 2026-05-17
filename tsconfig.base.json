@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@dockline/core": ["packages/core/src/index.ts"],
+      "@dockline/openai-compatible": ["packages/openai-compatible/src/index.ts"],
+      "@dockline/openrouter": ["packages/openrouter/src/index.ts"]
+    }
+  }
+}
