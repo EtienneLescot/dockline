@@ -10,15 +10,18 @@ The package root exports:
 
 - Capability types and helpers: `ModelCapabilities`, `CapabilityName`,
   `ToolCallingMode`, `StructuredOutputMode`, `noModelCapabilities`,
-  `chatModelCapabilities`, `hasCapability`, and `getMissingCapabilities`.
+  `chatModelCapabilities`, `hasCapability`, `getMissingCapabilities`,
+  `CapabilityProfile`, `mergeCapabilityProfile`, and
+  `capabilitiesFromProfile`.
 - Requirement checks: `assertCapability`, `assertCapabilities`, and
   `assertModelRequirements`.
 - Message, tool, response format, generation, stream event, and token usage
   types.
 - Provider primitives: `BaseModelConfig`, `ModelProvider`, `ProviderRegistry`,
   `globalProviderRegistry`, `createModel`, `listProviders`,
-  `validateBaseModelConfig`, `TokenStore`, `TokenRecord`, `ProviderContext`, and
-  `MemoryTokenStore`.
+  `testProviderConnection`, `listProviderModels`, `validateBaseModelConfig`,
+  `validateProviderDiscoveryConfig`, `TokenStore`, `TokenRecord`,
+  `ProviderContext`, and `MemoryTokenStore`.
 - Error primitives: `DocklineError`, `NormalizedModelError`,
   `normalizeUnknownError`, and `toDocklineError`.
 

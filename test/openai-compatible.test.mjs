@@ -98,6 +98,47 @@ test("OpenAI-compatible stream converts SSE text deltas into Dockline events", a
   }
 });
 
+test("OpenAI-compatible stream parses multiline CRLF SSE events", async () => {
+  const server = await createServer(async (_req, res) => {
+    res.writeHead(200, {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+    });
+
+    res.write("data: {\"choices\":[{\"delta\":{\"content\":\"Hel\"}}]}\r\n\r\n");
+    res.write("data: {\"choices\":[{\"delta\":{\"content\":\r\n");
+    res.write("data: \"lo\"}}]}\r\n\r\n");
+    res.write("data: [DONE]\r\n\r\n");
+    res.end();
+  });
+
+  try {
+    registerOpenAICompatibleProvider();
+
+    const model = await createModel({
+      provider: "openai-compatible",
+      baseURL: server.url,
+      model: "test-model",
+    });
+
+    const events = [];
+
+    for await (const event of model.stream({
+      messages: [{ role: "user", content: "Hello" }],
+    })) {
+      events.push(event);
+    }
+
+    assert.deepEqual(events, [
+      { type: "text-delta", text: "Hel" },
+      { type: "text-delta", text: "lo" },
+      { type: "done" },
+    ]);
+  } finally {
+    await server.close();
+  }
+});
+
 test("OpenAI-compatible stream accumulates streamed tool call arguments", async () => {
   const server = await createServer(async (_req, res) => {
     res.writeHead(200, { "content-type": "text/event-stream" });
@@ -182,6 +223,102 @@ test("OpenAI-compatible stream accumulates streamed tool call arguments", async 
   }
 });
 
+test("OpenAI-compatible stream keeps separate sparse tool call deltas in index order", async () => {
+  const server = await createServer(async (_req, res) => {
+    res.writeHead(200, { "content-type": "text/event-stream" });
+    res.write(
+      sse({
+        choices: [
+          {
+            delta: {
+              tool_calls: [
+                {
+                  index: 1,
+                  id: "call_2",
+                  function: { name: "lookup", arguments: "{\"id\":\"42\"}" },
+                },
+                {
+                  index: 0,
+                  function: { name: "search", arguments: "not-json" },
+                },
+              ],
+            },
+          },
+        ],
+      }),
+    );
+    res.write(
+      sse({
+        choices: [
+          {
+            delta: {
+              tool_calls: [
+                {
+                  index: 0,
+                  id: "call_1",
+                },
+              ],
+            },
+            finish_reason: "tool_calls",
+          },
+        ],
+      }),
+    );
+    res.write("data: [DONE]\n\n");
+    res.end();
+  });
+
+  try {
+    registerOpenAICompatibleProvider();
+
+    const model = await createModel({
+      provider: "openai-compatible",
+      baseURL: server.url,
+      model: "test-model",
+    });
+
+    const events = [];
+
+    for await (const event of model.stream({
+      messages: [{ role: "user", content: "Search" }],
+      tools: [
+        {
+          name: "search",
+          inputSchema: { type: "object" },
+        },
+        {
+          name: "lookup",
+          inputSchema: { type: "object" },
+        },
+      ],
+    })) {
+      events.push(event);
+    }
+
+    assert.deepEqual(events, [
+      {
+        type: "tool-call",
+        toolCall: {
+          id: "call_1",
+          name: "search",
+          arguments: "not-json",
+        },
+      },
+      {
+        type: "tool-call",
+        toolCall: {
+          id: "call_2",
+          name: "lookup",
+          arguments: { id: "42" },
+        },
+      },
+      { type: "done" },
+    ]);
+  } finally {
+    await server.close();
+  }
+});
+
 test("OpenAI-compatible HTTP errors become Dockline errors", async () => {
   const server = await createServer(async (_req, res) => {
     res.writeHead(429, { "content-type": "application/json" });
@@ -206,6 +343,165 @@ test("OpenAI-compatible HTTP errors become Dockline errors", async () => {
         return true;
       },
     );
+  } finally {
+    await server.close();
+  }
+});
+
+test("OpenAI-compatible maps nonstandard provider error bodies", async () => {
+  const cases = [
+    {
+      status: 400,
+      body: { error: "context window exceeded" },
+      expectedCode: "CONTEXT_LENGTH_EXCEEDED",
+      expectedMessage: "context window exceeded",
+      retryable: false,
+    },
+    {
+      status: 503,
+      body: { error: { code: "overloaded" } },
+      expectedCode: "PROVIDER_UNAVAILABLE",
+      expectedMessage: "overloaded",
+      retryable: true,
+    },
+    {
+      status: 404,
+      body: "",
+      expectedCode: "MODEL_NOT_FOUND",
+      expectedMessage: "Not Found",
+      retryable: false,
+    },
+  ];
+
+  for (const providerError of cases) {
+    const server = await createServer(async (_req, res) => {
+      const contentType = typeof providerError.body === "string" ? "text/plain" : "application/json";
+      res.writeHead(providerError.status, { "content-type": contentType });
+      res.end(typeof providerError.body === "string" ? providerError.body : JSON.stringify(providerError.body));
+    });
+
+    try {
+      registerOpenAICompatibleProvider();
+
+      const model = await createModel({
+        provider: "openai-compatible",
+        baseURL: server.url,
+        model: "test-model",
+      });
+
+      await assert.rejects(
+        () => model.generate({ messages: [{ role: "user", content: "Hello" }] }),
+        (error) => {
+          assert.equal(error.code, providerError.expectedCode);
+          assert.equal(error.message, providerError.expectedMessage);
+          assert.equal(error.statusCode, providerError.status);
+          assert.equal(error.retryable, providerError.retryable);
+          return true;
+        },
+      );
+    } finally {
+      await server.close();
+    }
+  }
+});
+
+test("OpenAI-compatible generate normalizes request network failures", async () => {
+  const server = await createServer(async (_req, res) => {
+    res.destroy();
+  });
+
+  try {
+    registerOpenAICompatibleProvider();
+
+    const model = await createModel({
+      provider: "openai-compatible",
+      baseURL: server.url,
+      model: "test-model",
+    });
+
+    await assert.rejects(
+      () => model.generate({ messages: [{ role: "user", content: "Hello" }] }),
+      (error) => {
+        assert.equal(error.code, "PROVIDER_UNAVAILABLE");
+        assert.equal(error.provider, "openai-compatible");
+        assert.equal(error.model, "test-model");
+        assert.equal(error.retryable, true);
+        assert(error.originalError);
+        return true;
+      },
+    );
+  } finally {
+    await server.close();
+  }
+});
+
+test("OpenAI-compatible stream yields request errors as events", async () => {
+  const server = await createServer(async (_req, res) => {
+    res.writeHead(503, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: { message: "Temporarily unavailable" } }));
+  });
+
+  try {
+    registerOpenAICompatibleProvider();
+
+    const model = await createModel({
+      provider: "openai-compatible",
+      baseURL: server.url,
+      model: "test-model",
+    });
+
+    const events = [];
+
+    for await (const event of model.stream({
+      messages: [{ role: "user", content: "Hello" }],
+    })) {
+      events.push(event);
+    }
+
+    assert.equal(events.length, 1);
+    assert.equal(events[0].type, "error");
+    assert.equal(events[0].error.code, "PROVIDER_UNAVAILABLE");
+    assert.equal(events[0].error.message, "Temporarily unavailable");
+    assert.equal(events[0].error.retryable, true);
+  } finally {
+    await server.close();
+  }
+});
+
+test("OpenAI-compatible request payload omits empty optional fields", async () => {
+  const server = await createServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req));
+
+    assert.equal(body.model, "test-model");
+    assert.equal(body.stream, false);
+    assert(!Object.hasOwn(body, "tools"));
+    assert(!Object.hasOwn(body, "stop"));
+    assert(!Object.hasOwn(body, "temperature"));
+    assert(!Object.hasOwn(body, "response_format"));
+    assert.equal(body.extra_body, "kept");
+
+    sendJson(res, {
+      choices: [{ message: { content: "ok" }, finish_reason: "stop" }],
+    });
+  });
+
+  try {
+    registerOpenAICompatibleProvider();
+
+    const model = await createModel({
+      provider: "openai-compatible",
+      baseURL: server.url,
+      model: "test-model",
+    });
+
+    const result = await model.generate({
+      messages: [{ role: "user", content: "Hello" }],
+      tools: [],
+      stopSequences: [],
+      providerOptions: { extra_body: "kept" },
+    });
+
+    assert.equal(result.text, "ok");
   } finally {
     await server.close();
   }

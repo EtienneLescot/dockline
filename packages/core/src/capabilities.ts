@@ -16,6 +16,22 @@ export type ModelCapabilities = {
 
 export type CapabilityName = keyof ModelCapabilities;
 
+export type CapabilityProfile = {
+  provider: string;
+  model?: string;
+  displayName?: string;
+  capabilities?: Partial<ModelCapabilities>;
+  toolCallingMode?: ToolCallingMode;
+  structuredOutputMode?: StructuredOutputMode;
+  contextWindow?: number;
+  maxOutputTokens?: number;
+  notes?: readonly string[];
+  source?: string;
+  updatedAt?: string;
+};
+
+export type CapabilityProfileOverride = Partial<CapabilityProfile>;
+
 export const noModelCapabilities = (): ModelCapabilities => ({
   textGeneration: false,
   streaming: false,
@@ -58,3 +74,23 @@ export type StructuredOutputMode =
   | "provider-native"
   | "prompt-fallback"
   | "unsupported";
+
+export const mergeCapabilityProfile = (
+  known: CapabilityProfile,
+  runtimeOverride: CapabilityProfileOverride = {},
+): CapabilityProfile => ({
+  ...known,
+  ...runtimeOverride,
+  capabilities: {
+    ...known.capabilities,
+    ...runtimeOverride.capabilities,
+  },
+});
+
+export const capabilitiesFromProfile = (
+  profile: Pick<CapabilityProfile, "capabilities"> | undefined,
+  defaults: ModelCapabilities = noModelCapabilities(),
+): ModelCapabilities => ({
+  ...defaults,
+  ...profile?.capabilities,
+});

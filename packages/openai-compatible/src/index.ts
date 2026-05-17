@@ -110,7 +110,16 @@ export class OpenAICompatibleChatModel implements UniversalChatModel {
   }
 
   async *stream(input: GenerateInput): AsyncIterable<ModelEvent> {
-    const response = await this.#request(input, true);
+    let response: Response;
+    try {
+      response = await this.#request(input, true);
+    } catch (error) {
+      yield {
+        type: "error",
+        error: toNormalizedError(error, this.provider, this.id),
+      };
+      return;
+    }
 
     if (!response.body) {
       yield {
@@ -176,26 +185,21 @@ export class OpenAICompatibleChatModel implements UniversalChatModel {
   }
 
   async #request(input: GenerateInput, stream: boolean): Promise<Response> {
-    const response = await fetch(`${this.#baseURL}/chat/completions`, {
-      method: "POST",
-      signal: input.signal,
-      headers: {
-        "content-type": "application/json",
-        ...(this.#apiKey ? { authorization: `Bearer ${this.#apiKey}` } : {}),
-        ...this.#headers,
-      },
-      body: JSON.stringify({
-        model: this.id,
-        messages: input.messages.map(toOpenAIMessage),
-        tools: input.tools?.map(toOpenAITool),
-        response_format: toOpenAIResponseFormat(input.responseFormat),
-        temperature: input.temperature,
-        max_tokens: input.maxOutputTokens,
-        stop: input.stopSequences,
-        stream,
-        ...input.providerOptions,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${this.#baseURL}/chat/completions`, {
+        method: "POST",
+        signal: input.signal,
+        headers: {
+          "content-type": "application/json",
+          ...(this.#apiKey ? { authorization: `Bearer ${this.#apiKey}` } : {}),
+          ...this.#headers,
+        },
+        body: JSON.stringify(toOpenAIRequestBody(input, this.id, stream)),
+      });
+    } catch (error) {
+      throw toRequestError(error, this.provider, this.id);
+    }
 
     if (!response.ok) {
       throw await toProviderError(response, this.provider, this.id);
@@ -319,6 +323,26 @@ const toOpenAIResponseFormat = (
   };
 };
 
+const toOpenAIRequestBody = (
+  input: GenerateInput,
+  model: string,
+  stream: boolean,
+): Record<string, unknown> =>
+  compactObject({
+    model,
+    messages: input.messages.map(toOpenAIMessage),
+    tools: input.tools && input.tools.length > 0 ? input.tools.map(toOpenAITool) : undefined,
+    response_format: toOpenAIResponseFormat(input.responseFormat),
+    temperature: input.temperature,
+    max_tokens: input.maxOutputTokens,
+    stop: input.stopSequences && input.stopSequences.length > 0 ? input.stopSequences : undefined,
+    stream,
+    ...input.providerOptions,
+  });
+
+const compactObject = (record: Record<string, unknown>): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(record).filter(([, value]) => value !== undefined));
+
 const toDocklineToolCall = (
   toolCall: NonNullable<OpenAIChatCompletionResponse["choices"]>[number]["message"] extends infer Message
     ? Message extends { tool_calls?: Array<infer ToolCall> }
@@ -353,7 +377,28 @@ const toTokenUsage = (usage: unknown): TokenUsage | undefined => {
 async function* parseServerSentEvents(body: ReadableStream<Uint8Array>): AsyncIterable<string> {
   const decoder = new TextDecoder();
   let buffer = "";
+  let dataLines: string[] = [];
   const reader = body.getReader();
+
+  const flushEvent = function* (): Iterable<string> {
+    if (dataLines.length > 0) {
+      yield dataLines.join("\n");
+      dataLines = [];
+    }
+  };
+
+  const readLine = (line: string): void => {
+    if (line.endsWith("\r")) line = line.slice(0, -1);
+    if (line === "") return;
+
+    const separator = line.indexOf(":");
+    const field = separator === -1 ? line : line.slice(0, separator);
+    if (field !== "data") return;
+
+    let value = separator === -1 ? "" : line.slice(separator + 1);
+    if (value.startsWith(" ")) value = value.slice(1);
+    dataLines.push(value);
+  };
 
   try {
     while (true) {
@@ -362,19 +407,22 @@ async function* parseServerSentEvents(body: ReadableStream<Uint8Array>): AsyncIt
 
       buffer += decoder.decode(value, { stream: true });
 
-      let boundary = buffer.indexOf("\n\n");
-      while (boundary !== -1) {
-        const event = buffer.slice(0, boundary);
-        buffer = buffer.slice(boundary + 2);
+      while (true) {
+        const newlineIndex = buffer.search(/\r\n|\r|\n/);
+        if (newlineIndex === -1) break;
 
-        for (const line of event.split("\n")) {
-          const trimmed = line.trim();
-          if (trimmed.startsWith("data:")) {
-            yield trimmed.slice("data:".length).trim();
-          }
+        const newline =
+          buffer[newlineIndex] === "\r" && buffer[newlineIndex + 1] === "\n"
+            ? "\r\n"
+            : buffer[newlineIndex];
+        const line = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + newline.length);
+
+        if (line === "" || line === "\r") {
+          yield* flushEvent();
+        } else {
+          readLine(line);
         }
-
-        boundary = buffer.indexOf("\n\n");
       }
     }
   } finally {
@@ -383,14 +431,66 @@ async function* parseServerSentEvents(body: ReadableStream<Uint8Array>): AsyncIt
 
   buffer += decoder.decode();
 
-  if (buffer.trim()) {
-    for (const line of buffer.split("\n")) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith("data:")) {
-        yield trimmed.slice("data:".length).trim();
-      }
+  if (buffer) readLine(buffer);
+  yield* flushEvent();
+};
+
+const toRequestError = (error: unknown, provider: string, model: string): DocklineError => {
+  if (error instanceof DocklineError) return error;
+
+  const aborted =
+    (error instanceof DOMException && error.name === "AbortError") ||
+    (error instanceof Error && error.name === "AbortError");
+
+  return new DocklineError({
+    code: aborted ? "UNKNOWN_ERROR" : "PROVIDER_UNAVAILABLE",
+    message: aborted
+      ? "OpenAI-compatible request was aborted."
+      : error instanceof Error
+        ? error.message
+        : "OpenAI-compatible request failed.",
+    provider,
+    model,
+    retryable: !aborted,
+    originalError: error,
+  });
+};
+
+const toNormalizedError = (
+  error: unknown,
+  provider: string,
+  model: string,
+): ReturnType<DocklineError["toJSON"]> => {
+  if (error instanceof DocklineError) return error.toJSON();
+
+  return {
+    code: "UNKNOWN_ERROR",
+    message: error instanceof Error ? error.message : "Unknown OpenAI-compatible provider error.",
+    provider,
+    model,
+    retryable: false,
+    originalError: error,
+  };
+};
+
+const readErrorMessage = async (response: Response): Promise<string> => {
+  const body = await response.text();
+  if (!body) return response.statusText;
+
+  try {
+    const parsed = JSON.parse(body) as { error?: unknown };
+    const error = parsed.error;
+    if (typeof error === "string") return error;
+    if (error && typeof error === "object") {
+      const record = error as Record<string, unknown>;
+      const message = record.message ?? record.code ?? record.type;
+      if (typeof message === "string") return message;
     }
+  } catch {
+    // Keep the raw body as message when it is not JSON.
   }
+
+  return body;
 }
 
 const getFirstChoice = (
@@ -458,15 +558,7 @@ const toProviderError = async (
   provider: string,
   model: string,
 ): Promise<DocklineError> => {
-  const body = await response.text();
-  let message = body || response.statusText;
-
-  try {
-    const parsed = JSON.parse(body) as { error?: { message?: string } };
-    message = parsed.error?.message ?? message;
-  } catch {
-    // Keep the raw body as message when it is not JSON.
-  }
+  const message = await readErrorMessage(response);
 
   return new DocklineError({
     code: toErrorCode(response.status, message),

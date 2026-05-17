@@ -8,7 +8,6 @@ Only remaining or active work is listed here. Completed items are removed from t
 
 Goal: prove immediate usefulness with a small surface area.
 
-- Harden `@dockline/openai-compatible` beyond the current contract tests.
 - Publish `0.1.0-alpha.0` to npm.
 
 Deliverable: a JS/TS app can switch between OpenRouter and a local endpoint without rewriting its agent logic.
@@ -17,9 +16,9 @@ Deliverable: a JS/TS app can switch between OpenRouter and a local endpoint with
 
 Goal: expose real behavior instead of flattening providers into a fake universal model.
 
-- Add capability profiles by provider/model where maintainable.
-- Add `provider.testConnection()`.
-- Add `provider.listModels()` where reasonable.
+- Add concrete capability profiles for provider/model combinations where maintainable.
+- Implement provider-side `testConnection()` hooks where useful.
+- Implement provider-side `listModels()` hooks where reasonable.
 - Represent tool calling modes explicitly:
   - native
   - emulated
@@ -82,16 +81,16 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 
 ## Immediate Tickets
 
-1. Harden `@dockline/openai-compatible` beyond the current contract tests.
-2. Decide whether to publish `0.1.0-alpha.0` now or after one more hardening pass.
-3. Add `provider.testConnection()` design and first implementation.
-4. Add `provider.listModels()` design and first implementation where cheap.
-5. Start provider/model capability profiles where maintainable.
+1. Decide whether to publish `0.1.0-alpha.0` now.
+2. Add provider-side `testConnection()` for `@dockline/openai-compatible`.
+3. Add provider-side `listModels()` for `@dockline/openai-compatible`.
+4. Add concrete capability profiles for current known package defaults.
+5. Improve normalized error mapping for more provider-specific failures.
 
 ## Current Focus
 
 Next autonomous batch:
 
-- OpenAI-compatible hardening.
-- Provider discovery shape (`testConnection`, `listModels`).
-- Capability profile design.
+- Provider-side discovery hooks.
+- Concrete capability profile data.
+- Final publish decision for `0.1.0-alpha.0`.

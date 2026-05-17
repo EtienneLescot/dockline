@@ -11,10 +11,38 @@ export type BaseModelConfig = {
   [key: string]: unknown;
 };
 
+export type ProviderDiscoveryConfig = {
+  provider: string;
+  model?: string;
+  apiKey?: string;
+  baseURL?: string;
+  headers?: Record<string, string>;
+  auth?: "api-key" | "oauth" | "device-code" | "environment" | string;
+  [key: string]: unknown;
+};
+
 export type ModelDescriptor = {
   id: string;
+  provider?: string;
   displayName?: string;
   capabilities?: Partial<UniversalChatModel["capabilities"]>;
+};
+
+export type TestConnectionStatus =
+  | "ok"
+  | "unauthorized"
+  | "misconfigured"
+  | "unavailable"
+  | "unsupported";
+
+export type TestConnectionResult = {
+  ok: boolean;
+  status: TestConnectionStatus;
+  provider: string;
+  model?: string;
+  message?: string;
+  retryable?: boolean;
+  details?: Record<string, unknown>;
 };
 
 export type ProviderContext = {
@@ -66,7 +94,11 @@ export interface ModelProvider<Config extends BaseModelConfig = BaseModelConfig>
   id: string;
   displayName?: string;
   createModel(config: Config, context?: ProviderContext): Promise<UniversalChatModel>;
-  listModels?(context?: ProviderContext): Promise<ModelDescriptor[]>;
+  testConnection?(config: Config, context?: ProviderContext): Promise<TestConnectionResult>;
+  listModels?(
+    config: ProviderDiscoveryConfig & Partial<Config>,
+    context?: ProviderContext,
+  ): Promise<ModelDescriptor[]>;
   validateConfig?(config: unknown): asserts config is Config;
 }
 
@@ -152,6 +184,24 @@ const validateProvider = (provider: ModelProvider): void => {
       retryable: false,
     });
   }
+
+  if (provider.testConnection !== undefined && typeof provider.testConnection !== "function") {
+    throw new DocklineError({
+      code: "INVALID_REQUEST",
+      message: `Provider "${provider.id}" testConnection must be a function when provided.`,
+      provider: provider.id,
+      retryable: false,
+    });
+  }
+
+  if (provider.listModels !== undefined && typeof provider.listModels !== "function") {
+    throw new DocklineError({
+      code: "INVALID_REQUEST",
+      message: `Provider "${provider.id}" listModels must be a function when provided.`,
+      provider: provider.id,
+      retryable: false,
+    });
+  }
 };
 
 export function validateBaseModelConfig(config: unknown): asserts config is BaseModelConfig {
@@ -211,6 +261,68 @@ export function validateBaseModelConfig(config: unknown): asserts config is Base
   }
 }
 
+export function validateProviderDiscoveryConfig(
+  config: unknown,
+): asserts config is ProviderDiscoveryConfig {
+  if (!isPlainObject(config)) {
+    throw new DocklineError({
+      code: "INVALID_REQUEST",
+      message: "Provider discovery config must be an object.",
+      retryable: false,
+    });
+  }
+
+  const candidate = config as Record<string, unknown>;
+
+  if (typeof candidate.provider !== "string" || candidate.provider.trim().length === 0) {
+    throw new DocklineError({
+      code: "INVALID_REQUEST",
+      message: "Provider discovery config must include a non-empty provider string.",
+      retryable: false,
+    });
+  }
+
+  if (
+    candidate.model !== undefined &&
+    (typeof candidate.model !== "string" || candidate.model.trim().length === 0)
+  ) {
+    throw new DocklineError({
+      code: "INVALID_REQUEST",
+      message: "Provider discovery config field \"model\" must be a non-empty string when provided.",
+      provider: candidate.provider,
+      retryable: false,
+    });
+  }
+
+  requireOptionalString(candidate, "apiKey");
+  requireOptionalString(candidate, "baseURL");
+  requireOptionalString(candidate, "auth");
+
+  if (candidate.headers !== undefined) {
+    if (!isPlainObject(candidate.headers)) {
+      throw new DocklineError({
+        code: "INVALID_REQUEST",
+        message: "Provider discovery config field \"headers\" must be an object when provided.",
+        provider: candidate.provider,
+        model: typeof candidate.model === "string" ? candidate.model : undefined,
+        retryable: false,
+      });
+    }
+
+    for (const [name, value] of Object.entries(candidate.headers)) {
+      if (typeof value !== "string") {
+        throw new DocklineError({
+          code: "INVALID_REQUEST",
+          message: `Provider discovery config header "${name}" must be a string.`,
+          provider: candidate.provider,
+          model: typeof candidate.model === "string" ? candidate.model : undefined,
+          retryable: false,
+        });
+      }
+    }
+  }
+}
+
 export const createModel = async (
   config: BaseModelConfig,
   context?: ProviderContext,
@@ -233,6 +345,85 @@ export const createModel = async (
   const validateConfig: ((value: unknown) => void) | undefined = provider.validateConfig;
   validateConfig?.(config);
   return provider.createModel(config, context);
+};
+
+export const testProviderConnection = async (
+  config: BaseModelConfig,
+  context?: ProviderContext,
+  registry = globalProviderRegistry,
+): Promise<TestConnectionResult> => {
+  validateBaseModelConfig(config);
+
+  const provider = registry.get(config.provider);
+
+  if (!provider) {
+    throw new DocklineError({
+      code: "INVALID_REQUEST",
+      message: `Provider "${config.provider}" is not registered.`,
+      provider: config.provider,
+      model: config.model,
+      retryable: false,
+    });
+  }
+
+  const validateConfig: ((value: unknown) => void) | undefined = provider.validateConfig;
+  validateConfig?.(config);
+
+  if (!provider.testConnection) {
+    return {
+      ok: false,
+      status: "unsupported",
+      provider: config.provider,
+      model: config.model,
+      message: `Provider "${config.provider}" does not implement testConnection.`,
+      retryable: false,
+    };
+  }
+
+  const result = await provider.testConnection(config, context);
+
+  return {
+    ...result,
+    provider: result.provider || config.provider,
+    model: result.model || config.model,
+  };
+};
+
+export const listProviderModels = async (
+  config: ProviderDiscoveryConfig,
+  context?: ProviderContext,
+  registry = globalProviderRegistry,
+): Promise<ModelDescriptor[]> => {
+  validateProviderDiscoveryConfig(config);
+
+  const provider = registry.get(config.provider);
+
+  if (!provider) {
+    throw new DocklineError({
+      code: "INVALID_REQUEST",
+      message: `Provider "${config.provider}" is not registered.`,
+      provider: config.provider,
+      model: config.model,
+      retryable: false,
+    });
+  }
+
+  if (!provider.listModels) {
+    throw new DocklineError({
+      code: "INVALID_REQUEST",
+      message: `Provider "${config.provider}" does not implement listModels.`,
+      provider: config.provider,
+      model: config.model,
+      retryable: false,
+    });
+  }
+
+  const models = await provider.listModels(config, context);
+
+  return models.map((model) => ({
+    ...model,
+    provider: model.provider || config.provider,
+  }));
 };
 
 export const listProviders = (registry = globalProviderRegistry): ModelProvider[] => registry.list();

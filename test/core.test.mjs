@@ -9,8 +9,15 @@ import {
   createModel,
   getMissingCapabilities,
   hasCapability,
+  listProviderModels,
+  testProviderConnection,
   validateBaseModelConfig,
+  validateProviderDiscoveryConfig,
 } from "../packages/core/dist/index.js";
+import {
+  capabilitiesFromProfile,
+  mergeCapabilityProfile,
+} from "../packages/core/dist/capabilities.js";
 
 const createTestModel = (overrides = {}) => ({
   id: "demo",
@@ -71,6 +78,57 @@ test("capability helpers report present and missing capabilities", () => {
   ]);
 });
 
+test("capability profiles merge known values with runtime overrides", () => {
+  const known = {
+    provider: "openai-compatible",
+    model: "demo",
+    capabilities: {
+      textGeneration: true,
+      streaming: true,
+      vision: true,
+      toolCalling: true,
+    },
+    toolCallingMode: "native",
+    notes: ["known profile"],
+  };
+
+  const profile = mergeCapabilityProfile(known, {
+    capabilities: {
+      vision: false,
+      structuredOutput: true,
+    },
+    structuredOutputMode: "json-schema",
+    notes: ["runtime override"],
+  });
+
+  assert.deepEqual(profile.capabilities, {
+    textGeneration: true,
+    streaming: true,
+    vision: false,
+    toolCalling: true,
+    structuredOutput: true,
+  });
+  assert.equal(profile.toolCallingMode, "native");
+  assert.equal(profile.structuredOutputMode, "json-schema");
+  assert.deepEqual(profile.notes, ["runtime override"]);
+});
+
+test("capabilitiesFromProfile returns a complete capability map", () => {
+  const capabilities = capabilitiesFromProfile({
+    capabilities: {
+      textGeneration: true,
+      streaming: true,
+      files: true,
+    },
+  });
+
+  assert.equal(capabilities.textGeneration, true);
+  assert.equal(capabilities.streaming, true);
+  assert.equal(capabilities.files, true);
+  assert.equal(capabilities.toolCalling, false);
+  assert.equal(capabilities.localExecution, false);
+});
+
 test("assertCapabilities rejects missing capabilities", () => {
   assert.throws(
     () => assertCapabilities(createTestModel(), ["vision"]),
@@ -128,6 +186,113 @@ test("ProviderRegistry validates providers before registration", () => {
   assert.throws(
     () => registry.set({ id: "broken" }),
     /must include a createModel function/,
+  );
+  assert.throws(
+    () => registry.set({ id: "broken", async createModel() {}, testConnection: true }),
+    /testConnection must be a function/,
+  );
+  assert.throws(
+    () => registry.set({ id: "broken", async createModel() {}, listModels: true }),
+    /listModels must be a function/,
+  );
+});
+
+test("validateProviderDiscoveryConfig allows model-less discovery config", () => {
+  assert.doesNotThrow(() =>
+    validateProviderDiscoveryConfig({
+      provider: "test",
+      apiKey: "key",
+      headers: { Authorization: "Bearer key" },
+    }),
+  );
+
+  assert.throws(
+    () => validateProviderDiscoveryConfig({ provider: "test", model: " " }),
+    /"model" must be a non-empty string/,
+  );
+});
+
+test("testProviderConnection returns unsupported for providers without a hook", async () => {
+  const registry = new ProviderRegistry();
+
+  registry.register({
+    id: "test",
+    async createModel() {
+      return createTestModel();
+    },
+  });
+
+  const result = await testProviderConnection(
+    { provider: "test", model: "demo" },
+    undefined,
+    registry,
+  );
+
+  assert.deepEqual(result, {
+    ok: false,
+    status: "unsupported",
+    provider: "test",
+    model: "demo",
+    message: 'Provider "test" does not implement testConnection.',
+    retryable: false,
+  });
+});
+
+test("testProviderConnection and listProviderModels delegate to provider discovery hooks", async () => {
+  const registry = new ProviderRegistry();
+  const calls = [];
+
+  registry.register({
+    id: "test",
+    async createModel() {
+      return createTestModel();
+    },
+    async testConnection(config, context) {
+      calls.push(["testConnection", config, context]);
+      return { ok: true, status: "ok", provider: config.provider };
+    },
+    async listModels(config, context) {
+      calls.push(["listModels", config, context]);
+      return [{ id: "alpha" }, { id: "beta", provider: "custom" }];
+    },
+  });
+
+  const context = {};
+  const connection = await testProviderConnection(
+    { provider: "test", model: "demo", apiKey: "key" },
+    context,
+    registry,
+  );
+  const models = await listProviderModels({ provider: "test", apiKey: "key" }, context, registry);
+
+  assert.equal(connection.ok, true);
+  assert.equal(connection.status, "ok");
+  assert.equal(connection.model, "demo");
+  assert.deepEqual(models, [
+    { id: "alpha", provider: "test" },
+    { id: "beta", provider: "custom" },
+  ]);
+  assert.equal(calls[0][0], "testConnection");
+  assert.equal(calls[0][1].model, "demo");
+  assert.equal(calls[0][2], context);
+  assert.equal(calls[1][0], "listModels");
+  assert.equal(calls[1][1].model, undefined);
+  assert.equal(calls[1][2], context);
+});
+
+test("listProviderModels rejects providers without a hook", async () => {
+  const registry = new ProviderRegistry();
+
+  registry.register({
+    id: "test",
+    async createModel() {
+      return createTestModel();
+    },
+  });
+
+  await assert.rejects(
+    () => listProviderModels({ provider: "test" }, undefined, registry),
+    /does not implement listModels/,
   );
 });
 
