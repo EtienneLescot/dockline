@@ -6,6 +6,11 @@ only what Dockline knows well enough to expose, and consumers should still expec
 provider-side validation errors when a model or account does not support a
 feature.
 
+Capability profiles are not the product center of gravity. Dockline's main UX is
+provider connection: helping application developers expose a broad provider and
+model choice to their users, through API keys or official account-backed auth
+flows. Capabilities describe the runtime result of that choice.
+
 Profiles do not replace `ModelCapabilities`. Runtime model instances still
 expose a complete boolean capability map. A profile can be used before model
 creation, during provider discovery, or as a maintainable known-default layer
@@ -126,6 +131,23 @@ defaults above intentionally mention only behavior that the current packages
 map in code. A provider/model can still reject a request even when a default
 profile marks the broad capability as `true`.
 
+## Boundary
+
+Dockline should not maintain an exhaustive capability registry for every model
+from OpenAI, Google, Anthropic, DeepSeek, Moonshot, MiniMax, Alibaba, or other
+providers. That information changes too often and belongs primarily to provider
+documentation, discovery endpoints, model cards, and runtime responses.
+
+Dockline may maintain:
+
+- connector-level defaults
+- auth-mode metadata
+- runtime option metadata when exposed by a provider
+- conservative model overlays when there is a maintainable source
+- host-application overrides
+
+Dockline core should not become a central LLM capability database.
+
 ## Merge Policy
 
 Known profiles should be treated as defaults. Runtime overrides win because
@@ -161,6 +183,7 @@ contract is promoted.
 
 - Keep profiles conservative. Prefer unknown over optimistic `true`.
 - Keep provider-level profiles broad and model-level profiles narrow.
+- Prefer provider discovery/runtime data over handwritten model facts.
 - Include `source` or `updatedAt` only when they help maintainers evaluate
   staleness; do not imply that Dockline continuously verifies provider docs.
 - Do not encode every provider-specific option. Use `notes` for short

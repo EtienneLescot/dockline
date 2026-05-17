@@ -1,9 +1,13 @@
-# Provider Capability Matrix
+# Connector And Provider Matrix
 
-This matrix tracks what Dockline can represent today, what the current packages
+This matrix tracks what Dockline can connect today, what the current packages
 implement, and what is only planned. It is intentionally conservative for the
-`0.1.0-alpha.0` line: a capability is marked implemented only when there is code
-in this repository for it.
+`0.1.0-alpha.0` line: a provider, auth mode, or capability is marked implemented
+only when there is code in this repository for it.
+
+This is not an exhaustive model capability catalog. The product goal is to help
+applications expose provider choice and official auth paths, then surface the
+runtime capabilities of the selected model or runtime.
 
 ## Status Legend
 
@@ -16,12 +20,30 @@ in this repository for it.
 
 ## Current Packages
 
-| Package | Status | Role | Text generation | Streaming | Tool calling | Structured output | Vision input | Token usage | Auth shape | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `@dockline/core` | Implemented | Public contracts, capability flags, provider registry, normalized errors, token-store primitives, and experimental coding-agent runtime types. | Contract only | Contract only | Contract only | Contract only | Contract only | Contract only | API key, OAuth/device-code shapes, and `TokenStore` interfaces only | Core does not call providers directly. Coding-agent runtime types are alpha and exported through `@dockline/core/experimental`. |
-| `@dockline/openai-compatible` | Implemented | OpenAI-compatible chat completions connector. | Yes | Yes, via server-sent events | Native function/tool calls | JSON object and JSON schema request mapping | URL image parts are mapped; file parts are rejected | Maps OpenAI-style usage fields | API key plus custom headers | Capability defaults are broad and can be overridden per config/provider because OpenAI-compatible endpoints vary by model and server. |
-| `@dockline/openrouter` | Implemented | OpenRouter connector built on `@dockline/openai-compatible`. | Yes | Yes | Native where the selected OpenRouter model/provider supports it | JSON object/schema request mapping through the OpenAI-compatible connector | Inherited from OpenAI-compatible path; actual support depends on routed model | Yes when returned by OpenRouter/model | API key, optional app metadata headers | No model-listing or provider/model capability profile is implemented yet. Treat model-specific support as runtime/provider dependent. |
-| `@dockline/langchain` | Adapter | LangChain JS adapter for `UniversalChatModel`. | Delegates to wrapped model | Delegates to wrapped model | Accepts/binds tools and delegates to wrapped model | Delegates response format to wrapped model | Converts LangChain-style image URL parts to Dockline image parts | Maps Dockline usage to LangChain-style metadata | Uses wrapped model auth | This package is not a provider and does not add capabilities beyond the wrapped Dockline model. |
+| Package | Status | Role | Provider picker support | Model discovery | Connection test | Auth shape | Runtime capability reporting | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `@dockline/core` | Implemented | Public contracts, provider registry, discovery hooks, capability flags, normalized errors, token-store primitives, and experimental coding-agent runtime types. | Contract only | Contract only | Contract only | API key, OAuth/device-code shapes, and `TokenStore` interfaces only | Contract only | Core does not call providers directly. Coding-agent runtime types are alpha and exported through `@dockline/core/experimental`. |
+| `@dockline/openai-compatible` | Implemented | Generic OpenAI-compatible chat completions connector. | Basic installed-provider metadata through package registration; richer provider-picker metadata still planned. | Yes, via `GET /models`. | Yes, via provider `testConnection()`. | API key plus custom headers. | Broad connector defaults with runtime/config overrides. | OpenAI-compatible endpoints vary by server and model; runtime errors remain authoritative. |
+| `@dockline/openrouter` | Implemented | OpenRouter connector built on `@dockline/openai-compatible`. | Basic installed-provider metadata through package registration; richer provider-picker metadata still planned. | Yes, via OpenRouter `/models`. | Yes, via OpenRouter `/models`. | API key, optional app metadata headers. | Inherited OpenAI-compatible request-path defaults; selected routed model can differ. | Treat model-specific support as runtime/provider dependent. |
+| `@dockline/langchain` | Adapter | LangChain JS adapter for `UniversalChatModel`. | Not a provider. | Delegates to wrapped model/provider. | Delegates to wrapped model/provider. | Uses wrapped model auth. | Delegates to wrapped model and translates messages/events. | This package is not a provider and does not add capabilities beyond the wrapped Dockline model. |
+
+## Target Provider Coverage
+
+Dockline should help applications expose a broad recognized provider list. The
+long-tail API-key path can be delegated to maintained upstream libraries, while
+native Dockline packages should fill major gaps and official auth modes.
+
+| Provider area | API-key path | Official OAuth/device-code/account path | Intended strategy |
+| --- | --- | --- | --- |
+| OpenAI | Planned native package or broad provider adapter. | Planned only through official documented flows. | Native package likely needed for first-class auth/runtime behavior. |
+| Google Gemini | Planned native package or broad provider adapter. | Planned only through official documented flows. | Start with API-key support, then official account auth if suitable for agent apps. |
+| Anthropic | Planned native package or broad provider adapter. | Planned only through official documented flows. | API-key support can likely come from adapter; native package if auth/runtime gaps appear. |
+| DeepSeek | Planned native package or broad provider adapter. | Unknown/planned only if officially documented. | Use adapter if coverage is good; native if missing. |
+| Moonshot AI | Planned native package or broad provider adapter. | Unknown/planned only if officially documented. | Use adapter if coverage is good; native if missing. |
+| MiniMax | Planned native package or broad provider adapter. | Unknown/planned only if officially documented. | Use adapter if coverage is good; native if missing. |
+| Alibaba/Qwen | Planned native package or broad provider adapter. | Unknown/planned only if officially documented. | Use adapter if coverage is good; native if missing. |
+| OpenRouter | Implemented. | API-key focused today. | Keep as gateway/provider aggregator. |
+| OpenAI-compatible local/self-hosted | Implemented. | Depends on endpoint. | Keep generic and configurable. |
 
 ## Alpha Default Capability Profiles
 
@@ -62,8 +84,8 @@ documented, legal provider flows.
   profile registries or generated model catalogs.
 - Consumers should still check declared capabilities and expect
   provider-specific failures for unsupported model features.
-- `provider.listModels()` and `provider.testConnection()` are roadmap items, not
-  implemented behavior.
+- `provider.listModels()` and `provider.testConnection()` are implemented for
+  OpenAI-compatible and OpenRouter.
 - Tool calling modes and structured output modes exist in core types, but richer
   provider-specific reporting is still planned.
 - Connector-sensitive code should stay in separate packages so ordinary API-key

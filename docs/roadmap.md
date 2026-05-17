@@ -6,17 +6,87 @@ Only remaining or active work is listed here. Completed items are removed from t
 
 ## Phase 1 - MVP Wedge
 
-Goal: prove immediate usefulness with a small surface area.
+Goal: prove immediate usefulness with a small provider-choice surface area.
 
 - Publish `0.1.0-alpha.0` to npm.
 
-Deliverable: a JS/TS app can switch between OpenRouter and a local endpoint without rewriting its agent logic.
+Deliverable: a JS/TS app can switch between OpenRouter and a local endpoint
+without rewriting its agent logic.
 
-## Phase 2 - Provider Reality
+## Phase 2 - Provider Picker Foundation
 
-Goal: expose real behavior instead of flattening providers into a fake universal model.
+Goal: make Dockline useful for applications that want to expose provider choice
+to end users.
 
-- Add code-backed capability profile constants where maintainable.
+- Define provider metadata for UI selection:
+  - provider id
+  - display name
+  - auth modes supported by the connector
+  - whether model discovery is supported
+  - whether account-backed auth is planned or implemented
+- Add first provider catalog surface for installed providers, not for every
+  model on the market.
+- Add provider-side docs/examples for `testConnection()` and `listModels()`.
+- Add model/runtime option metadata where providers expose it at runtime,
+  including reasoning effort controls when supported.
+
+Deliverable: an app can build a provider picker from Dockline-installed
+connectors without hardcoding every provider manually.
+
+## Phase 3 - Provider Coverage
+
+Goal: cover major providers broadly without rewriting every API-key connector by
+hand.
+
+- Add adapter package over a broad provider library such as Vercel AI SDK or
+  LangChain for long-tail API-key coverage.
+- Add native provider packages where major providers are missing or
+  under-supported:
+  - OpenAI
+  - Google Gemini
+  - Anthropic
+  - DeepSeek
+  - Moonshot AI
+  - MiniMax
+  - Alibaba/Qwen
+  - Mistral
+- Keep OpenRouter and OpenAI-compatible as gateway and custom endpoint paths.
+- Improve normalized errors for provider-specific failures.
+
+Deliverable: a developer can expose a broad recognized provider list without
+Dockline becoming a giant handwritten provider zoo.
+
+## Phase 4 - Official Auth And TokenStore
+
+Goal: support API keys and official account-backed auth paths cleanly.
+
+- Implement built-in `TokenStore` variants:
+  - memory
+  - filesystem
+  - optional OS keychain later
+- Define OAuth/PKCE and device-code abstractions.
+- Add a small CLI:
+  - `dockline login`
+  - `dockline logout`
+  - `dockline status`
+- Add official-auth connectors only where provider flows are documented:
+  - OAuth/PKCE
+  - device code
+  - SDK-delegated auth
+  - environment-provided auth
+- Document security rules:
+  - never log secrets
+  - never scrape tokens
+  - never depend on private undocumented endpoints
+  - keep connector-sensitive code in separate packages
+
+Deliverable: Dockline has clean auth primitives for legal, documented provider flows.
+
+## Phase 5 - Runtime Capability Reality
+
+Goal: expose real runtime behavior instead of flattening providers into a fake
+universal model.
+
 - Represent tool calling modes explicitly:
   - native
   - emulated
@@ -26,32 +96,17 @@ Goal: expose real behavior instead of flattening providers into a fake universal
   - provider-native
   - prompt fallback
   - unsupported
-- Improve normalized errors for additional provider-specific failures.
+- Represent reasoning controls where supported:
+  - effort level
+  - budget/tokens when provider-supported
+  - unsupported
+- Keep capability profiles optional and advisory.
+- Do not maintain an exhaustive model capability database in core.
 
-Deliverable: Dockline is reliable enough for agents to make routing decisions from capabilities.
+Deliverable: agents and UIs can adapt to the model selected by the user at
+runtime without Dockline pretending all models are equivalent.
 
-## Phase 3 - Auth And TokenStore
-
-Goal: prepare subscription-backed connectors without muddy shortcuts.
-
-- Implement built-in `TokenStore` variants:
-  - memory
-  - filesystem
-  - optional OS keychain later
-- Define OAuth/device-code abstractions.
-- Add a small CLI:
-  - `dockline login`
-  - `dockline logout`
-  - `dockline status`
-- Document security rules:
-  - never log secrets
-  - never scrape tokens
-  - never depend on private undocumented endpoints
-  - keep connector-sensitive code in separate packages
-
-Deliverable: Dockline has clean auth primitives for legal, documented provider flows.
-
-## Phase 4 - Differentiation
+## Phase 6 - Agent Runtime Differentiation
 
 Goal: support model sources that are not just API-key chat models.
 
@@ -62,7 +117,7 @@ Goal: support model sources that are not just API-key chat models.
 
 Deliverable: Dockline can represent agent runtimes without pretending they are ordinary chat models.
 
-## Phase 5 - Ecosystem
+## Phase 7 - Ecosystem
 
 Goal: make Dockline easy to adopt from existing JS/TS agent stacks.
 
@@ -72,7 +127,8 @@ Goal: make Dockline easy to adopt from existing JS/TS agent stacks.
   - Vercel AI SDK
   - Mastra/VoltAgent later
 - Add optional local OpenAI-compatible server.
-- Publish and maintain a provider matrix.
+- Publish and maintain a connector/provider matrix, not an exhaustive model
+  capability catalog.
 - Add examples for Yagr and n8n-as-code.
 
 Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE extensions, and workflow tools.
@@ -80,12 +136,14 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 ## Immediate Tickets
 
 1. Decide whether to publish `0.1.0-alpha.0` now.
-2. Add code-backed capability profile constants for current package defaults.
-3. Improve normalized error mapping for additional provider-specific failures.
-4. Decide whether Phase 2 discovery hooks need provider-specific docs examples.
+2. Add provider metadata types for provider-picker UX.
+3. Add installed-provider catalog/listing helpers.
+4. Decide whether broad provider coverage should start with Vercel AI SDK,
+   LangChain, or both.
+5. Draft the first official-auth design for OAuth/PKCE and device code.
 
 ## Current Focus
 
 Next decision:
 
-- Publish `0.1.0-alpha.0` now, or do one small code-backed profile pass first.
+- Publish `0.1.0-alpha.0` now, or do one provider-picker metadata pass first.
