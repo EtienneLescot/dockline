@@ -183,6 +183,10 @@ Provider aggregation strategy:
   libraries.
 - Keep API-key provider coverage separate from account-backed auth coverage so
   the simple path stays simple.
+- Keep an internal provider routing map that can route `openai`, `google`,
+  `anthropic`, `mistral`, `openrouter`, `openai-compatible`, `minimax`,
+  `deepseek`, `moonshot`, `alibaba`, and account-backed variants to the best
+  backing implementation without exposing that complexity to integrators.
 
 Subscription-backed connectors:
 
@@ -199,6 +203,15 @@ Official account auth:
 
 Strict boundary: no token scraping, no private undocumented endpoints, and no
 ToS workarounds.
+
+End-user selection flow:
+
+1. choose provider
+2. choose connection type, such as API key, OAuth, device flow, or environment auth
+3. test connection
+4. choose model from discovery when available
+5. choose runtime options such as reasoning effort when supported
+6. run the agentic workflow with capabilities exposed by the selected runtime
 
 Agent runtimes:
 

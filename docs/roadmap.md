@@ -18,9 +18,11 @@ without rewriting its agent logic.
 Goal: make Dockline useful for applications that want to expose provider choice
 to end users.
 
+- Add internal provider routing plan and package strategy.
 - Define provider metadata for UI selection:
   - provider id
   - display name
+  - backing implementation
   - auth modes supported by the connector
   - whether model discovery is supported
   - whether account-backed auth is planned or implemented
@@ -138,9 +140,11 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 1. Decide whether to publish `0.1.0-alpha.0` now.
 2. Add provider metadata types for provider-picker UX.
 3. Add installed-provider catalog/listing helpers.
-4. Decide whether broad provider coverage should start with Vercel AI SDK,
+4. Implement `@dockline/providers` explicit provider imports.
+5. Design optional `@dockline/all` batteries-included import.
+6. Decide whether broad provider coverage should start with Vercel AI SDK,
    LangChain, or both.
-5. Draft the first official-auth design for OAuth/PKCE and device code.
+7. Draft the first official-auth design for OAuth/PKCE and device code.
 
 ## Current Focus
 
