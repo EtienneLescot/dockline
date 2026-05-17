@@ -1,19 +1,44 @@
 {
   "name": "@dockline/core",
-  "version": "0.0.0",
-  "description": "Core interfaces and provider registry for Dockline.",
+  "version": "0.1.0-alpha.0",
+  "description": "Core interfaces, model types, capabilities, and provider registry for Dockline.",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EtienneLescot/dockline.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/EtienneLescot/dockline#readme",
+  "bugs": {
+    "url": "https://github.com/EtienneLescot/dockline/issues"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "llm",
+    "model-provider",
+    "typescript"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./experimental": {
+      "types": "./dist/experimental.d.ts",
+      "default": "./dist/experimental.js"
     }
   },
   "files": [
     "dist"
   ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc -b --pretty false"

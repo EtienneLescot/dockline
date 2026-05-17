@@ -1,9 +1,27 @@
 {
   "name": "dockline",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0-alpha.0",
   "description": "Capability-aware model connector layer for JS/TS agents.",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EtienneLescot/dockline.git"
+  },
+  "homepage": "https://github.com/EtienneLescot/dockline#readme",
+  "bugs": {
+    "url": "https://github.com/EtienneLescot/dockline/issues"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "llm",
+    "model-provider",
+    "openai-compatible",
+    "openrouter",
+    "typescript"
+  ],
   "packageManager": "npm@10.0.0",
   "workspaces": [
     "packages/*"

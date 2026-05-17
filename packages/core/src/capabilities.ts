@@ -41,6 +41,16 @@ export const chatModelCapabilities = (
   ...overrides,
 });
 
+export const hasCapability = (
+  capabilities: ModelCapabilities,
+  capability: CapabilityName,
+): boolean => capabilities[capability];
+
+export const getMissingCapabilities = (
+  capabilities: ModelCapabilities,
+  required: readonly CapabilityName[],
+): CapabilityName[] => required.filter((capability) => !hasCapability(capabilities, capability));
+
 export type ToolCallingMode = "native" | "emulated" | "unsupported";
 
 export type StructuredOutputMode =
@@ -48,4 +58,3 @@ export type StructuredOutputMode =
   | "provider-native"
   | "prompt-fallback"
   | "unsupported";
-

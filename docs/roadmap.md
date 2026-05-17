@@ -2,23 +2,12 @@
 
 This roadmap keeps Dockline focused on its wedge: a capability-aware connector layer for JS/TS agents, not another agent framework.
 
+Only remaining or active work is listed here. Completed items are removed from the main checklist once they land.
+
 ## Phase 0 - Stabilize Core
 
 Goal: make the minimal public API credible.
 
-- Lock down the first public types:
-  - `UniversalChatModel`
-  - `ModelEvent`
-  - `ModelCapabilities`
-  - normalized errors
-  - provider registry
-- Add focused tests for:
-  - provider registration
-  - config validation
-  - streaming events
-  - tool calls
-  - normalized provider errors
-- Document what is stable vs experimental.
 - Add a small provider capability matrix.
 - Add a complete minimal CLI example.
 
@@ -28,11 +17,8 @@ Deliverable: `@dockline/core` is clean, typed, tested, and honest about its boun
 
 Goal: prove immediate usefulness with a small surface area.
 
-- Harden `@dockline/openai-compatible`.
-- Finalize `@dockline/openrouter`.
-- Add one framework adapter first:
-  - LangChain/LangGraph JS, or
-  - DeepAgents JS
+- Harden `@dockline/openai-compatible` beyond the current contract tests.
+- Finalize `@dockline/openrouter` with provider-specific tests.
 - Add examples for:
   - OpenRouter
   - local OpenAI-compatible endpoint
@@ -110,12 +96,17 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 
 ## Immediate Tickets
 
-1. Done - Add contract tests for OpenAI-compatible streaming.
-2. Tighten the public core API and mark the alpha boundary.
-3. Add a LangChain JS adapter.
-4. Improve the README quickstart.
-5. Prepare npm package metadata for `0.1.0-alpha.0`.
+1. Add a small provider capability matrix.
+2. Add OpenRouter provider-specific tests.
+3. Add a complete minimal CLI example.
+4. Add a simple agent/workflow caller example.
+5. Prepare npm publication checks for `0.1.0-alpha.0`.
 
 ## Current Focus
 
-Start with OpenAI-compatible contract tests. This catches the most fragile part of the MVP first: converting provider streams into stable Dockline events.
+Next autonomous batch:
+
+- Capability matrix.
+- OpenRouter tests.
+- CLI and workflow examples.
+- npm publish readiness.

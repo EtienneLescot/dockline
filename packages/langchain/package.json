@@ -1,13 +1,13 @@
 {
-  "name": "@dockline/openai-compatible",
+  "name": "@dockline/langchain",
   "version": "0.1.0-alpha.0",
-  "description": "OpenAI-compatible chat completions connector for Dockline.",
+  "description": "LangChain JS adapter for Dockline chat models.",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/EtienneLescot/dockline.git",
-    "directory": "packages/openai-compatible"
+    "directory": "packages/langchain"
   },
   "homepage": "https://github.com/EtienneLescot/dockline#readme",
   "bugs": {
@@ -16,10 +16,9 @@
   "keywords": [
     "ai",
     "agents",
-    "chat-completions",
+    "langchain",
     "llm",
     "model-provider",
-    "openai-compatible",
     "typescript"
   ],
   "main": "./dist/index.js",
@@ -43,5 +42,13 @@
   },
   "dependencies": {
     "@dockline/core": "0.1.0-alpha.0"
+  },
+  "peerDependencies": {
+    "@langchain/core": ">=0.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@langchain/core": {
+      "optional": true
+    }
   }
 }

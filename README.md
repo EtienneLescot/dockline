@@ -4,16 +4,42 @@ Dockline is a capability-aware model connector layer for JS/TS agentic applicati
 
 It is not an agent framework. It is the lower-level model/runtime connection layer that an agent, CLI, IDE extension, workflow orchestrator, or SaaS app can use to connect to model APIs, OpenAI-compatible endpoints, gateways, subscription-backed sources, and agent runtimes through explicit capabilities.
 
+Alpha package: `0.1.0-alpha.0`.
+
+## Quickstart
+
+Install the core package and at least one provider package:
+
+```bash
+npm install @dockline/core @dockline/openrouter
+```
+
+Register providers once at application startup, before calling `createModel`:
+
+```ts
+import { registerOpenRouterProvider } from "@dockline/openrouter";
+
+registerOpenRouterProvider();
+```
+
+Create a model with the registered provider id and call `generate` or `stream`:
+
 ```ts
 import { createModel } from "@dockline/core";
 import { registerOpenRouterProvider } from "@dockline/openrouter";
 
 registerOpenRouterProvider();
 
+const apiKey = process.env.OPENROUTER_API_KEY;
+
+if (!apiKey) {
+  throw new Error("Set OPENROUTER_API_KEY before using OpenRouter.");
+}
+
 const model = await createModel({
   provider: "openrouter",
-  model: "anthropic/claude-sonnet-4.5",
-  apiKey: process.env.OPENROUTER_API_KEY,
+  model: "openai/gpt-4o-mini",
+  apiKey,
 });
 
 for await (const event of model.stream({
@@ -21,6 +47,32 @@ for await (const event of model.stream({
 })) {
   if (event.type === "text-delta") process.stdout.write(event.text);
 }
+```
+
+For any OpenAI-compatible `/chat/completions` endpoint, install and register the generic provider instead:
+
+```bash
+npm install @dockline/core @dockline/openai-compatible
+```
+
+```ts
+import { createModel } from "@dockline/core";
+import { registerOpenAICompatibleProvider } from "@dockline/openai-compatible";
+
+registerOpenAICompatibleProvider();
+
+const model = await createModel({
+  provider: "openai-compatible",
+  baseURL: "http://localhost:4000/v1",
+  apiKey: process.env.OPENAI_COMPATIBLE_API_KEY,
+  model: "my-model",
+});
+
+const result = await model.generate({
+  messages: [{ role: "user", content: "Explain Dockline in one sentence." }],
+});
+
+console.log(result.text);
 ```
 
 ## Why
@@ -50,11 +102,12 @@ Dockline keeps that concern separate from agent orchestration.
 
 ## Packages
 
-Current scaffold:
+Current alpha packages:
 
 - `@dockline/core`: common interfaces, message types, events, capabilities, errors, provider registry
 - `@dockline/openai-compatible`: generic OpenAI-compatible chat completions connector
 - `@dockline/openrouter`: OpenRouter provider built on the OpenAI-compatible connector
+- `@dockline/langchain`: structural LangChain/LangGraph JS adapter for Dockline chat models
 
 Planned packages:
 
@@ -65,7 +118,6 @@ Planned packages:
 - `@dockline/codex`
 - `@dockline/github-copilot`
 - `@dockline/vscode-lm`
-- `@dockline/langchain`
 - `@dockline/deepagents`
 
 ## MVP Scope
@@ -99,6 +151,6 @@ Dockline must not use scraped tokens, private undocumented endpoints, or provide
 
 ```bash
 npm install
+npm test
 npm run typecheck
 ```
-
