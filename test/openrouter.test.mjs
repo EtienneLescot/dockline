@@ -395,3 +395,69 @@ test("OpenRouter listModels throws provider errors for failed model discovery", 
     globalThis.fetch = previousFetch;
   }
 });
+
+test("OpenRouter listModels maps provider error messages conservatively", async () => {
+  const previousFetch = globalThis.fetch;
+  const cases = [
+    {
+      status: 400,
+      message: "No such model: missing/model",
+      expectedCode: "MODEL_NOT_FOUND",
+      retryable: false,
+    },
+    {
+      status: 400,
+      message: "Invalid API key",
+      expectedCode: "AUTHENTICATION_ERROR",
+      retryable: false,
+    },
+    {
+      status: 400,
+      message: "Rate limit exceeded",
+      expectedCode: "RATE_LIMITED",
+      retryable: true,
+    },
+    {
+      status: 400,
+      message: "Context window exceeded",
+      expectedCode: "CONTEXT_LENGTH_EXCEEDED",
+      retryable: false,
+    },
+  ];
+
+  try {
+    const registry = new ProviderRegistry();
+    registry.register(createOpenRouterProvider());
+
+    for (const testCase of cases) {
+      globalThis.fetch = async () =>
+        new Response(JSON.stringify({ error: { message: testCase.message } }), {
+          status: testCase.status,
+          statusText: "Bad Request",
+          headers: { "content-type": "application/json" },
+        });
+
+      await assert.rejects(
+        () =>
+          listProviderModels(
+            {
+              provider: "openrouter",
+              apiKey: "openrouter-key",
+            },
+            undefined,
+            registry,
+          ),
+        (error) => {
+          assert.equal(error.code, testCase.expectedCode);
+          assert.equal(error.provider, "openrouter");
+          assert.equal(error.statusCode, testCase.status);
+          assert.equal(error.retryable, testCase.retryable);
+          assert.equal(error.message, testCase.message);
+          return true;
+        },
+      );
+    }
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});

@@ -7,16 +7,23 @@ The integrator should not need to know whether a provider is implemented through
 LangChain, Vercel AI SDK, OpenAI-compatible transport, or a native Dockline
 connector. That routing decision belongs inside Dockline.
 
+The upstream coverage decision is documented in
+[Provider Coverage Strategy](provider-coverage.md). The short version is:
+LangChain first for the initial broad API-key provider set, OpenAI-compatible
+transport for base-URL providers, and native Dockline packages for missing
+providers, official auth, and provider behavior that a generic upstream adapter
+cannot safely own.
+
 ## Internal Provider Map
 
 Initial target map:
 
 | Dockline provider id | Preferred backing implementation | Auth modes target | Notes |
 | --- | --- | --- | --- |
-| `anthropic` | `@langchain/anthropic` or Vercel AI SDK provider | API key first; official account auth only if documented | Use upstream maintained API-key support unless Dockline needs auth/runtime behavior not exposed upstream. |
-| `openai` | `@langchain/openai` or Vercel AI SDK provider | API key; OAuth/PKCE/device flow only through official documented flows | Native Dockline package may be needed for first-class official account auth and reasoning/runtime options. |
-| `google` | `@langchain/google-genai` or Vercel AI SDK provider | API key first; official Google auth only if appropriate and documented for this use case | Keep Gemini API key path separate from any Google account flow. |
-| `mistral` | `@langchain/mistralai` or Vercel AI SDK provider | API key first | Native Dockline package only if upstream coverage is insufficient. |
+| `anthropic` | `@langchain/anthropic` first | API key first; official account auth only if documented | Use LangChain for initial API-key coverage. Native package only if Dockline needs auth/runtime behavior not exposed upstream. |
+| `openai` | `@langchain/openai` first | API key; OAuth/PKCE/device flow only through official documented flows | Native Dockline package likely needed for official account auth and richer reasoning/runtime behavior. |
+| `google` | `@langchain/google-genai` first | API key first; official Google auth only if appropriate and documented for this use case | Keep Gemini API key path separate from any Google account/cloud flow. |
+| `mistral` | `@langchain/mistralai` first | API key first | Native Dockline package only if upstream coverage is insufficient. |
 | `openrouter` | OpenAI-compatible transport with OpenRouter base URL | API key | Already implemented as `@dockline/openrouter`. |
 | `openai-compatible` | OpenAI-compatible transport with custom base URL | API key/custom headers | Already implemented as `@dockline/openai-compatible`. |
 | `openai-oauth` | `@dockline/openai-oauth` | OAuth/PKCE or official device/headless flow if available | Separate from API-key `openai` so sensitive auth stays isolated. |
@@ -30,6 +37,10 @@ Initial target map:
 This table is a routing plan, not a promise that all packages exist today.
 Before implementing each row, verify the current upstream package status and
 provider terms.
+
+Vercel AI SDK remains a valid future backing where it is materially better for a
+provider or host runtime, but it should not be the initial broad coverage layer
+for the same provider ids.
 
 ## Integrator API Shape
 
@@ -221,7 +232,10 @@ not added explicit metadata yet.
 
 ## Implementation Rules
 
-- Prefer maintained upstream libraries for broad API-key coverage.
+- Prefer LangChain JS provider packages for the first broad API-key coverage
+  pass over `anthropic`, `openai`, `google`, and `mistral`.
+- Keep Vercel AI SDK as a secondary backing or ecosystem adapter until Dockline
+  has a stable provider metadata and runtime-option contract.
 - Build native Dockline connectors when a major provider is missing upstream,
   upstream behavior is insufficient, or official auth flows are not supported.
 - Keep account-backed auth packages isolated from API-key packages.

@@ -1,0 +1,54 @@
+{
+  "name": "@dockline/langchain-provider",
+  "version": "0.1.0-alpha.0",
+  "description": "Generic LangChain-compatible provider bridge for Dockline chat models.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EtienneLescot/dockline.git",
+    "directory": "packages/langchain-provider"
+  },
+  "homepage": "https://github.com/EtienneLescot/dockline#readme",
+  "bugs": {
+    "url": "https://github.com/EtienneLescot/dockline/issues"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "langchain",
+    "llm",
+    "model-provider",
+    "typescript"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@dockline/core": "0.1.0-alpha.0"
+  },
+  "peerDependencies": {
+    "@langchain/core": ">=0.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@langchain/core": {
+      "optional": true
+    }
+  }
+}

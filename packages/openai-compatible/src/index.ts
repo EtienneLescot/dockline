@@ -5,6 +5,7 @@ import {
   type BaseModelConfig,
   type GenerateInput,
   type GenerateResult,
+  type ModelErrorCode,
   type ModelCapabilities,
   type ModelDescriptor,
   type ModelEvent,
@@ -397,13 +398,14 @@ const listOpenAICompatibleModels = async (
   const result = await requestOpenAICompatibleModels(config, options);
 
   if (!result.ok) {
+    const code = toErrorCode(result.status, result.message);
     throw new DocklineError({
-      code: toErrorCode(result.status, result.message),
+      code,
       message: result.message,
       provider,
       model: config.model,
       statusCode: result.status,
-      retryable: result.retryable,
+      retryable: result.retryable || isRetryableError(code),
     });
   }
 
@@ -757,7 +759,7 @@ const readErrorMessage = async (response: Response): Promise<string> => {
   }
 
   return body;
-}
+};
 
 const getFirstChoice = (
   chunk: Record<string, unknown>,
@@ -825,26 +827,56 @@ const toProviderError = async (
   model: string,
 ): Promise<DocklineError> => {
   const message = await readErrorMessage(response);
+  const code = toErrorCode(response.status, message);
 
   return new DocklineError({
-    code: toErrorCode(response.status, message),
+    code,
     message,
     provider,
     model,
     statusCode: response.status,
-    retryable: response.status === 429 || response.status >= 500,
+    retryable: isRetryableError(code),
   });
 };
 
-const toErrorCode = (status: number, message: string) => {
+const toErrorCode = (status: number, message: string): ModelErrorCode => {
   const lowerMessage = message.toLowerCase();
 
   if (status === 401) return "AUTHENTICATION_ERROR";
   if (status === 403) return "AUTHORIZATION_ERROR";
   if (status === 404) return "MODEL_NOT_FOUND";
   if (status === 429) return "RATE_LIMITED";
-  if (lowerMessage.includes("context")) return "CONTEXT_LENGTH_EXCEEDED";
+  if (isAuthenticationMessage(lowerMessage)) return "AUTHENTICATION_ERROR";
+  if (isRateLimitMessage(lowerMessage)) return "RATE_LIMITED";
+  if (isModelNotFoundMessage(lowerMessage)) return "MODEL_NOT_FOUND";
+  if (isContextLengthMessage(lowerMessage)) return "CONTEXT_LENGTH_EXCEEDED";
   if (status >= 400 && status < 500) return "INVALID_REQUEST";
   if (status >= 500) return "PROVIDER_UNAVAILABLE";
   return "UNKNOWN_ERROR";
 };
+
+const isAuthenticationMessage = (message: string): boolean =>
+  message.includes("invalid api key") ||
+  message.includes("incorrect api key") ||
+  message.includes("missing api key") ||
+  message.includes("authentication failed") ||
+  message.includes("unauthenticated") ||
+  message.includes("unauthorized");
+
+const isRateLimitMessage = (message: string): boolean =>
+  message.includes("rate limit") || message.includes("rate-limit") || message.includes("too many requests");
+
+const isModelNotFoundMessage = (message: string): boolean =>
+  message.includes("model not found") ||
+  message.includes("no such model") ||
+  message.includes("model does not exist") ||
+  message.includes("unknown model");
+
+const isContextLengthMessage = (message: string): boolean =>
+  message.includes("context length") ||
+  message.includes("context window") ||
+  message.includes("maximum context") ||
+  message.includes("too many tokens");
+
+const isRetryableError = (code: ModelErrorCode): boolean =>
+  code === "RATE_LIMITED" || code === "PROVIDER_UNAVAILABLE";

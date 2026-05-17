@@ -108,6 +108,7 @@ Current alpha packages:
 - `@dockline/openai-compatible`: generic OpenAI-compatible chat completions connector
 - `@dockline/openrouter`: OpenRouter provider built on the OpenAI-compatible connector
 - `@dockline/langchain`: structural LangChain/LangGraph JS adapter for Dockline chat models
+- `@dockline/langchain-provider`: structural LangChain-to-Dockline provider bridge
 - `@dockline/providers`: explicit provider factory imports for provider-picker UX
 - `@dockline/all`: optional convenience bundle for listing or registering every provider
 

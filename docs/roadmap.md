@@ -18,8 +18,6 @@ without rewriting its agent logic.
 Goal: make Dockline useful for applications that want to expose provider choice
 to end users.
 
-- Add provider-side docs/examples for `testConnection()` and `listModels()`.
-
 Deliverable: an app can build a provider picker from Dockline-installed
 connectors without hardcoding every provider manually.
 
@@ -28,20 +26,22 @@ connectors without hardcoding every provider manually.
 Goal: cover major providers broadly without rewriting every API-key connector by
 hand.
 
-- Add adapter package over a broad provider library such as Vercel AI SDK or
-  LangChain for long-tail API-key coverage.
-- Add native provider packages where major providers are missing or
-  under-supported:
+- Decided - Start broad API-key coverage with LangChain-backed provider
+  packages for OpenAI, Anthropic, Google Gemini, and Mistral; keep Vercel AI SDK
+  as a secondary backing or ecosystem adapter.
+- Add LangChain-backed provider packages:
   - OpenAI
   - Google Gemini
   - Anthropic
+  - Mistral
+- Add native provider packages where major providers are missing or
+  under-supported:
   - DeepSeek
   - Moonshot AI
   - MiniMax
   - Alibaba/Qwen
-  - Mistral
 - Keep OpenRouter and OpenAI-compatible as gateway and custom endpoint paths.
-- Improve normalized errors for provider-specific failures.
+- Improve normalized errors for provider-specific failures as new providers land.
 
 Deliverable: a developer can expose a broad recognized provider list without
 Dockline becoming a giant handwritten provider zoo.
@@ -126,16 +126,16 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 ## Immediate Tickets
 
 1. Decide whether to publish `0.1.0-alpha.0` now.
-2. Decide whether broad provider coverage should start with Vercel AI SDK,
-   LangChain, or both.
-3. Start first native or upstream-backed provider package beyond OpenRouter.
-4. Expand runtime option metadata for reasoning controls once a concrete
+2. Start LangChain-backed OpenAI provider using `@dockline/langchain-provider`.
+3. Start LangChain-backed Anthropic provider using `@dockline/langchain-provider`.
+4. Add LangChain-backed Google and Mistral providers.
+5. Expand runtime option metadata for reasoning controls once a concrete
    provider supports them.
 
 ## Current Focus
 
 Next autonomous batch:
 
-- Concrete provider metadata on implemented providers.
-- First `@dockline/all` package.
-- Provider-side discovery examples.
+- LangChain-backed OpenAI provider.
+- LangChain-backed Anthropic provider.
+- Runtime reasoning option metadata where supported.
