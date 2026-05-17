@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createModel,
+  getProviderMetadata,
   globalProviderRegistry,
   listProviderModels,
   ProviderRegistry,
@@ -13,6 +14,51 @@ import {
   registerOpenRouterProvider,
   OPENROUTER_BASE_URL,
 } from "../packages/openrouter/dist/index.js";
+
+test("OpenRouter provider exposes concrete metadata", () => {
+  const provider = createOpenRouterProvider();
+
+  assert.deepEqual(provider.metadata, {
+    id: "openrouter",
+    displayName: "OpenRouter",
+    backing: "gateway",
+    authModes: ["api-key"],
+    supportsModelDiscovery: true,
+    supportsConnectionTest: true,
+    runtimeOptions: [
+      {
+        id: "temperature",
+        type: "number",
+        displayName: "Temperature",
+        category: "sampling",
+        min: 0,
+        max: 2,
+        step: 0.01,
+      },
+      {
+        id: "maxOutputTokens",
+        type: "integer",
+        displayName: "Max output tokens",
+        category: "output",
+        min: 1,
+        step: 1,
+      },
+    ],
+  });
+
+  const metadata = getProviderMetadata(provider);
+  assert.equal(metadata.id, "openrouter");
+  assert.equal(metadata.displayName, "OpenRouter");
+  assert.equal(metadata.backing, "gateway");
+  assert.deepEqual(metadata.authModes, ["api-key"]);
+  assert.equal(metadata.supportsModelDiscovery, true);
+  assert.equal(metadata.supportsConnectionTest, true);
+  assert.deepEqual(
+    metadata.runtimeOptions.map((option) => option.id),
+    ["temperature", "maxOutputTokens"],
+  );
+  assert.notEqual(metadata.runtimeOptions, provider.metadata.runtimeOptions);
+});
 
 test("OpenRouter registers globally and creates an OpenAI-compatible model", async () => {
   registerOpenRouterProvider();

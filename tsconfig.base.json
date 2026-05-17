@@ -14,6 +14,7 @@
     "skipLibCheck": true,
     "paths": {
       "@dockline/core": ["packages/core/src/index.ts"],
+      "@dockline/all": ["packages/all/src/index.ts"],
       "@dockline/langchain": ["packages/langchain/src/index.ts"],
       "@dockline/openai-compatible": ["packages/openai-compatible/src/index.ts"],
       "@dockline/openrouter": ["packages/openrouter/src/index.ts"],

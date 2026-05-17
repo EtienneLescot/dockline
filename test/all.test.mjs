@@ -1,0 +1,58 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { ProviderRegistry } from "../packages/core/dist/index.js";
+import {
+  allProviderFactories,
+  allProviders,
+  registerAllProviders,
+} from "../packages/all/dist/index.js";
+
+const expectedProviderIds = [
+  "openrouter",
+  "openai-compatible",
+  "openai",
+  "google",
+  "anthropic",
+  "mistral",
+  "minimax",
+  "deepseek",
+  "moonshot",
+  "alibaba",
+  "copilot",
+  "openai-oauth",
+];
+
+test("@dockline/all exposes the full implemented and planned provider set", () => {
+  assert.deepEqual(Object.keys(allProviderFactories), [
+    "openrouter",
+    "openaiCompatible",
+    "openai",
+    "google",
+    "anthropic",
+    "mistral",
+    "minimax",
+    "deepseek",
+    "moonshot",
+    "alibaba",
+    "copilot",
+    "openaiOAuth",
+  ]);
+
+  assert.deepEqual(
+    allProviders().map((provider) => provider.id),
+    expectedProviderIds,
+  );
+});
+
+test("@dockline/all registers providers into a supplied registry", () => {
+  const registry = new ProviderRegistry();
+
+  assert.equal(registerAllProviders(registry), registry);
+  assert.deepEqual(
+    registry.list().map((provider) => provider.id),
+    expectedProviderIds,
+  );
+
+  assert.doesNotThrow(() => registerAllProviders(registry));
+});

@@ -19,9 +19,6 @@ Goal: make Dockline useful for applications that want to expose provider choice
 to end users.
 
 - Add provider-side docs/examples for `testConnection()` and `listModels()`.
-- Implement concrete provider metadata on native provider packages, not only in
-  `@dockline/providers`.
-- Add first `@dockline/all` implementation.
 
 Deliverable: an app can build a provider picker from Dockline-installed
 connectors without hardcoding every provider manually.
@@ -129,13 +126,11 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 ## Immediate Tickets
 
 1. Decide whether to publish `0.1.0-alpha.0` now.
-2. Add provider-side docs/examples for `testConnection()` and `listModels()`.
-3. Implement concrete provider metadata on `@dockline/openrouter` and
-   `@dockline/openai-compatible`.
-4. Add first `@dockline/all` implementation.
-5. Decide whether broad provider coverage should start with Vercel AI SDK,
+2. Decide whether broad provider coverage should start with Vercel AI SDK,
    LangChain, or both.
-6. Start first native or upstream-backed provider package beyond OpenRouter.
+3. Start first native or upstream-backed provider package beyond OpenRouter.
+4. Expand runtime option metadata for reasoning controls once a concrete
+   provider supports them.
 
 ## Current Focus
 

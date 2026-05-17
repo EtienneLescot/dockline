@@ -3,10 +3,62 @@ import http from "node:http";
 import test from "node:test";
 import {
   createModel,
+  getProviderMetadata,
   listProviderModels,
   testProviderConnection,
 } from "../packages/core/dist/index.js";
-import { registerOpenAICompatibleProvider } from "../packages/openai-compatible/dist/index.js";
+import {
+  createOpenAICompatibleProvider,
+  registerOpenAICompatibleProvider,
+} from "../packages/openai-compatible/dist/index.js";
+
+test("OpenAI-compatible provider exposes concrete metadata", () => {
+  const provider = createOpenAICompatibleProvider({
+    id: "local-openai",
+    displayName: "Local OpenAI-compatible",
+  });
+
+  assert.deepEqual(provider.metadata, {
+    id: "local-openai",
+    displayName: "Local OpenAI-compatible",
+    backing: "openai-compatible",
+    authModes: ["api-key", "custom"],
+    supportsModelDiscovery: true,
+    supportsConnectionTest: true,
+    runtimeOptions: [
+      {
+        id: "temperature",
+        type: "number",
+        displayName: "Temperature",
+        category: "sampling",
+        min: 0,
+        max: 2,
+        step: 0.01,
+      },
+      {
+        id: "maxOutputTokens",
+        type: "integer",
+        displayName: "Max output tokens",
+        category: "output",
+        min: 1,
+        step: 1,
+      },
+    ],
+  });
+
+  const metadata = getProviderMetadata(provider);
+  assert.equal(metadata.id, "local-openai");
+  assert.equal(metadata.displayName, "Local OpenAI-compatible");
+  assert.equal(metadata.backing, "openai-compatible");
+  assert.deepEqual(metadata.authModes, ["api-key", "custom"]);
+  assert.equal(metadata.supportsModelDiscovery, true);
+  assert.equal(metadata.supportsConnectionTest, true);
+  assert.deepEqual(
+    metadata.runtimeOptions.map((option) => option.id),
+    ["temperature", "maxOutputTokens"],
+  );
+  assert.notEqual(metadata.runtimeOptions, provider.metadata.runtimeOptions);
+});
 
 test("OpenAI-compatible generate normalizes text and usage", async () => {
   const server = await createServer(async (req, res) => {

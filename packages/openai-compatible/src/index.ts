@@ -223,23 +223,55 @@ export const createOpenAICompatibleModel = (
 
 export const createOpenAICompatibleProvider = (
   options: OpenAICompatibleProviderOptions = {},
-): ModelProvider<OpenAICompatibleConfig> => ({
-  id: options.id ?? "openai-compatible",
-  displayName: options.displayName ?? "OpenAI-compatible",
-  validateConfig(config: unknown): asserts config is OpenAICompatibleConfig {
-    void config;
-  },
-  async createModel(config) {
-    assertHasBaseURL(config, options);
-    return createOpenAICompatibleModel(config, options);
-  },
-  async testConnection(config) {
-    return testOpenAICompatibleConnection(config, options);
-  },
-  async listModels(config) {
-    return listOpenAICompatibleModels(config, options);
-  },
-});
+): ModelProvider<OpenAICompatibleConfig> => {
+  const id = options.id ?? "openai-compatible";
+  const displayName = options.displayName ?? "OpenAI-compatible";
+
+  return {
+    id,
+    displayName,
+    metadata: {
+      id,
+      displayName,
+      backing: "openai-compatible",
+      authModes: ["api-key", "custom"],
+      supportsModelDiscovery: true,
+      supportsConnectionTest: true,
+      runtimeOptions: [
+        {
+          id: "temperature",
+          type: "number",
+          displayName: "Temperature",
+          category: "sampling",
+          min: 0,
+          max: 2,
+          step: 0.01,
+        },
+        {
+          id: "maxOutputTokens",
+          type: "integer",
+          displayName: "Max output tokens",
+          category: "output",
+          min: 1,
+          step: 1,
+        },
+      ],
+    },
+    validateConfig(config: unknown): asserts config is OpenAICompatibleConfig {
+      void config;
+    },
+    async createModel(config) {
+      assertHasBaseURL(config, options);
+      return createOpenAICompatibleModel(config, options);
+    },
+    async testConnection(config) {
+      return testOpenAICompatibleConnection(config, options);
+    },
+    async listModels(config) {
+      return listOpenAICompatibleModels(config, options);
+    },
+  };
+};
 
 export const registerOpenAICompatibleProvider = (
   options?: OpenAICompatibleProviderOptions,

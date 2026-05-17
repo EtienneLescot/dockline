@@ -109,12 +109,11 @@ Current alpha packages:
 - `@dockline/openrouter`: OpenRouter provider built on the OpenAI-compatible connector
 - `@dockline/langchain`: structural LangChain/LangGraph JS adapter for Dockline chat models
 - `@dockline/providers`: explicit provider factory imports for provider-picker UX
+- `@dockline/all`: optional convenience bundle for listing or registering every provider
 
 Planned packages:
 
-- `@dockline/all`
 - `@dockline/ai-sdk`
-- `@dockline/all`
 - `@dockline/openai`
 - `@dockline/anthropic`
 - `@dockline/google`
@@ -153,6 +152,7 @@ Dockline must not use scraped tokens, private undocumented endpoints, or provide
 ## Design Docs
 
 - [Provider routing](docs/provider-routing.md): provider package strategy, optional `@dockline/all`, and provider-picker metadata.
+- [Provider discovery](docs/discovery.md): provider metadata, connection testing, model listing, and picker examples.
 - [Auth UX design](docs/auth-design.md): API-key, OAuth/device/headless, Copilot, and token-plan auth boundaries.
 
 ## Development

@@ -37,6 +37,33 @@ export const createOpenRouterModel = (config: OpenRouterConfig) => {
 export const createOpenRouterProvider = (): ModelProvider<OpenRouterConfig> => ({
   id: "openrouter",
   displayName: "OpenRouter",
+  metadata: {
+    id: "openrouter",
+    displayName: "OpenRouter",
+    backing: "gateway",
+    authModes: ["api-key"],
+    supportsModelDiscovery: true,
+    supportsConnectionTest: true,
+    runtimeOptions: [
+      {
+        id: "temperature",
+        type: "number",
+        displayName: "Temperature",
+        category: "sampling",
+        min: 0,
+        max: 2,
+        step: 0.01,
+      },
+      {
+        id: "maxOutputTokens",
+        type: "integer",
+        displayName: "Max output tokens",
+        category: "output",
+        min: 1,
+        step: 1,
+      },
+    ],
+  },
   validateConfig(config: unknown): asserts config is OpenRouterConfig {
     const candidate = config as Partial<OpenRouterConfig> | null;
 
