@@ -9,6 +9,9 @@ import {
   createModel,
   getMissingCapabilities,
   hasCapability,
+  getProviderMetadata,
+  listAvailableProviders,
+  listProviderMetadata,
   listProviderModels,
   testProviderConnection,
   validateBaseModelConfig,
@@ -195,6 +198,92 @@ test("ProviderRegistry validates providers before registration", () => {
     () => registry.set({ id: "broken", async createModel() {}, listModels: true }),
     /listModels must be a function/,
   );
+  assert.throws(
+    () => registry.set({ id: "broken", metadata: true, async createModel() {} }),
+    /metadata must be an object/,
+  );
+});
+
+test("provider metadata falls back for providers without metadata", () => {
+  const registry = new ProviderRegistry();
+
+  registry.register({
+    id: "test",
+    displayName: "Test Provider",
+    async createModel() {
+      return createTestModel();
+    },
+    async listModels() {
+      return [];
+    },
+  });
+
+  assert.deepEqual(listProviderMetadata(registry), [
+    {
+      id: "test",
+      displayName: "Test Provider",
+      authModes: [],
+      supportsModelDiscovery: true,
+      supportsConnectionTest: false,
+      runtimeOptions: undefined,
+    },
+  ]);
+  assert.deepEqual(listAvailableProviders(registry), listProviderMetadata(registry));
+});
+
+test("provider metadata uses provider metadata when available", () => {
+  const provider = {
+    id: "test",
+    displayName: "Fallback Name",
+    metadata: {
+      displayName: "Picker Name",
+      description: "Shown in provider picker.",
+      backing: "openai-compatible",
+      authModes: ["api-key"],
+      supportsModelDiscovery: false,
+      supportsConnectionTest: true,
+      runtimeOptions: [
+        {
+          id: "reasoning.effort",
+          type: "enum",
+          category: "reasoning",
+          enumValues: [{ value: "low" }, { value: "high", displayName: "High" }],
+        },
+      ],
+    },
+    async createModel() {
+      return createTestModel();
+    },
+    async listModels() {
+      return [];
+    },
+  };
+
+  const metadata = getProviderMetadata(provider);
+
+  assert.deepEqual(metadata, {
+    id: "test",
+    displayName: "Picker Name",
+    description: "Shown in provider picker.",
+    backing: "openai-compatible",
+    authModes: ["api-key"],
+    supportsModelDiscovery: false,
+    supportsConnectionTest: true,
+    runtimeOptions: [
+      {
+        id: "reasoning.effort",
+        type: "enum",
+        category: "reasoning",
+        enumValues: [{ value: "low" }, { value: "high", displayName: "High" }],
+      },
+    ],
+  });
+
+  metadata.authModes.push("oauth");
+  metadata.runtimeOptions[0].enumValues[0].displayName = "Low";
+
+  assert.deepEqual(provider.metadata.authModes, ["api-key"]);
+  assert.deepEqual(provider.metadata.runtimeOptions[0].enumValues[0], { value: "low" });
 });
 
 test("validateProviderDiscoveryConfig allows model-less discovery config", () => {

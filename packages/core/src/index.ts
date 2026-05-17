@@ -50,7 +50,10 @@ export {
 } from "./model.js";
 export {
   createModel,
+  getProviderMetadata,
   globalProviderRegistry,
+  listAvailableProviders,
+  listProviderMetadata,
   listProviderModels,
   listProviders,
   MemoryTokenStore,
@@ -63,6 +66,12 @@ export {
   type ModelProvider,
   type ProviderDiscoveryConfig,
   type ProviderContext,
+  type ProviderAuthMode,
+  type ProviderBacking,
+  type ProviderMetadata,
+  type ReasoningOptionDescriptor,
+  type RuntimeOptionDescriptor,
+  type RuntimeOptionValue,
   type TestConnectionResult,
   type TestConnectionStatus,
   type TokenRecord,

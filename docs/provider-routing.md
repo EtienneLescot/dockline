@@ -74,6 +74,101 @@ const providers = await dockline.listProviders();
 integrators will prefer explicit imports to avoid pulling provider dependencies
 they do not expose.
 
+## `@dockline/all` Package Contract
+
+`@dockline/all` is an optional convenience package for apps that want a complete
+provider picker without choosing provider packages one by one. It should compose
+the same provider factories available through explicit packages; it should not
+define a separate provider model or hide different behavior behind the same ids.
+
+Target exports:
+
+```ts
+export { createDockline, createModel } from "@dockline/core";
+export type {
+  Dockline,
+  ProviderMetadata,
+  ProviderAuthMode,
+  RuntimeOptionDescriptor,
+} from "@dockline/core";
+
+export { allProviders, defaultProviderPolicy } from "./providers";
+export type { AllProvidersOptions, ProviderPolicy } from "./providers";
+
+export {
+  openai,
+  anthropic,
+  google,
+  mistral,
+  openrouter,
+  openaiCompatible,
+  minimax,
+  deepseek,
+  moonshot,
+  alibaba,
+} from "@dockline/providers";
+```
+
+`allProviders(options?)` should return provider registrations, not mutate global
+state. Options should allow host applications to exclude provider families,
+disable account-backed auth packages, and choose whether optional heavyweight
+backings such as LangChain or Vercel AI SDK adapters are included.
+
+Suggested option shape:
+
+```ts
+type AllProvidersOptions = {
+  include?: string[];
+  exclude?: string[];
+  auth?: {
+    apiKey?: boolean;
+    accountBacked?: boolean;
+    environmentProvided?: boolean;
+  };
+  backing?: {
+    native?: boolean;
+    langchain?: boolean;
+    vercelAiSdk?: boolean;
+    openaiCompatible?: boolean;
+  };
+};
+```
+
+Default behavior should favor predictable provider-picker coverage:
+
+- include stable API-key providers and OpenAI-compatible/gateway providers;
+- exclude experimental account-backed connectors unless the integrator opts in;
+- expose metadata for unavailable optional flows instead of pretending they are
+  ready;
+- preserve provider ids used by explicit imports.
+
+`@dockline/all` should not be a dependency of `@dockline/core` or individual
+provider packages. It is a leaf package.
+
+## Dependency And Bundle Tradeoffs
+
+The optional package exists because provider coverage and bundle discipline pull
+in opposite directions.
+
+Explicit imports are the recommended default for production apps with known
+provider lists. They keep install size, transitive dependencies, audit surface,
+edge-runtime compatibility, and bundle output narrow.
+
+`@dockline/all` is useful for CLIs, desktop apps, local tools, admin panels,
+examples, and hosted provider-picker products where broad discovery matters more
+than minimal dependency graphs. It may depend on broad upstream provider
+libraries and native Dockline connectors that an explicit-import app would never
+install.
+
+Bundler expectations:
+
+- mark provider modules as side-effect-free where possible;
+- keep account-backed auth connectors split so they can be excluded;
+- avoid importing Node-only token-store code from browser-safe provider modules;
+- document any provider that cannot run in browser, edge, or serverless targets;
+- prefer lazy provider initialization so listing providers does not immediately
+  load SDK clients, read secrets, or start auth flows.
+
 ## End-User Flow
 
 The target application UX is:
@@ -99,6 +194,9 @@ The target application UX is:
 The key is that reasoning level is a runtime option attached to the selected
 provider/model, not a universal Dockline promise.
 
+Detailed auth UX, storage, and provider terms boundaries are specified in
+[Auth UX Design](auth-design.md).
+
 ## Provider Metadata Needed
 
 To support that UX, each installed provider should expose metadata such as:
@@ -107,7 +205,8 @@ To support that UX, each installed provider should expose metadata such as:
 type ProviderMetadata = {
   id: string;
   displayName: string;
-  backing: "native" | "langchain" | "vercel-ai-sdk" | "openai-compatible" | "gateway";
+  description?: string;
+  backing?: "native" | "langchain" | "vercel-ai-sdk" | "openai-compatible" | "gateway";
   authModes: ProviderAuthMode[];
   supportsModelDiscovery: boolean;
   supportsConnectionTest: boolean;
@@ -116,6 +215,9 @@ type ProviderMetadata = {
 ```
 
 This metadata is for provider picker UX. It is not a model capability database.
+Core exposes `listProviderMetadata()` and `listAvailableProviders()` so host
+applications can list installed providers even when older provider packages have
+not added explicit metadata yet.
 
 ## Implementation Rules
 
@@ -127,4 +229,3 @@ This metadata is for provider picker UX. It is not a model capability database.
   table maintained in core.
 - Keep provider-specific escape hatches namespaced so advanced users can still
   access provider features without polluting the common API.
-

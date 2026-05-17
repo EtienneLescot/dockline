@@ -28,6 +28,58 @@ export type ModelDescriptor = {
   capabilities?: Partial<UniversalChatModel["capabilities"]>;
 };
 
+export type ProviderAuthMode =
+  | "api-key"
+  | "oauth"
+  | "device-code"
+  | "environment"
+  | "custom"
+  | (string & {});
+
+export type ProviderBacking =
+  | "native"
+  | "langchain"
+  | "vercel-ai-sdk"
+  | "openai-compatible"
+  | "gateway"
+  | "custom"
+  | (string & {});
+
+export type RuntimeOptionValue = string | number | boolean;
+
+export type RuntimeOptionDescriptor = {
+  id: string;
+  type: "boolean" | "string" | "number" | "integer" | "enum";
+  displayName?: string;
+  description?: string;
+  category?: "reasoning" | "sampling" | "output" | "provider-specific" | (string & {});
+  required?: boolean;
+  defaultValue?: RuntimeOptionValue;
+  enumValues?: Array<{
+    value: RuntimeOptionValue;
+    displayName?: string;
+    description?: string;
+  }>;
+  min?: number;
+  max?: number;
+  step?: number;
+};
+
+export type ReasoningOptionDescriptor = RuntimeOptionDescriptor & {
+  category: "reasoning";
+};
+
+export type ProviderMetadata = {
+  id: string;
+  displayName: string;
+  description?: string;
+  backing?: ProviderBacking;
+  authModes: ProviderAuthMode[];
+  supportsModelDiscovery: boolean;
+  supportsConnectionTest: boolean;
+  runtimeOptions?: RuntimeOptionDescriptor[];
+};
+
 export type TestConnectionStatus =
   | "ok"
   | "unauthorized"
@@ -93,6 +145,7 @@ export class MemoryTokenStore implements TokenStore {
 export interface ModelProvider<Config extends BaseModelConfig = BaseModelConfig> {
   id: string;
   displayName?: string;
+  metadata?: Partial<ProviderMetadata>;
   createModel(config: Config, context?: ProviderContext): Promise<UniversalChatModel>;
   testConnection?(config: Config, context?: ProviderContext): Promise<TestConnectionResult>;
   listModels?(
@@ -198,6 +251,15 @@ const validateProvider = (provider: ModelProvider): void => {
     throw new DocklineError({
       code: "INVALID_REQUEST",
       message: `Provider "${provider.id}" listModels must be a function when provided.`,
+      provider: provider.id,
+      retryable: false,
+    });
+  }
+
+  if (provider.metadata !== undefined && !isPlainObject(provider.metadata)) {
+    throw new DocklineError({
+      code: "INVALID_REQUEST",
+      message: `Provider "${provider.id}" metadata must be an object when provided.`,
       provider: provider.id,
       retryable: false,
     });
@@ -427,3 +489,32 @@ export const listProviderModels = async (
 };
 
 export const listProviders = (registry = globalProviderRegistry): ModelProvider[] => registry.list();
+
+export const getProviderMetadata = (provider: ModelProvider): ProviderMetadata => {
+  const metadata = provider.metadata ?? {};
+
+  return {
+    ...metadata,
+    id: provider.id,
+    displayName: metadata.displayName || provider.displayName || provider.id,
+    authModes: metadata.authModes ? [...metadata.authModes] : [],
+    supportsModelDiscovery: metadata.supportsModelDiscovery ?? Boolean(provider.listModels),
+    supportsConnectionTest: metadata.supportsConnectionTest ?? Boolean(provider.testConnection),
+    runtimeOptions: metadata.runtimeOptions
+      ? metadata.runtimeOptions.map((option) => ({
+          ...option,
+          enumValues: option.enumValues
+            ? option.enumValues.map((enumValue) => ({ ...enumValue }))
+            : undefined,
+        }))
+      : undefined,
+  };
+};
+
+export const listProviderMetadata = (
+  registry = globalProviderRegistry,
+): ProviderMetadata[] => registry.list().map(getProviderMetadata);
+
+export const listAvailableProviders = (
+  registry = globalProviderRegistry,
+): ProviderMetadata[] => listProviderMetadata(registry);

@@ -108,10 +108,13 @@ Current alpha packages:
 - `@dockline/openai-compatible`: generic OpenAI-compatible chat completions connector
 - `@dockline/openrouter`: OpenRouter provider built on the OpenAI-compatible connector
 - `@dockline/langchain`: structural LangChain/LangGraph JS adapter for Dockline chat models
+- `@dockline/providers`: explicit provider factory imports for provider-picker UX
 
 Planned packages:
 
+- `@dockline/all`
 - `@dockline/ai-sdk`
+- `@dockline/all`
 - `@dockline/openai`
 - `@dockline/anthropic`
 - `@dockline/google`
@@ -146,6 +149,11 @@ Phase 2:
 ## Safety Boundary
 
 Dockline must not use scraped tokens, private undocumented endpoints, or provider ToS workarounds. Subscription-backed connectors belong behind explicit provider packages and must rely on documented flows, official SDKs, or environment APIs.
+
+## Design Docs
+
+- [Provider routing](docs/provider-routing.md): provider package strategy, optional `@dockline/all`, and provider-picker metadata.
+- [Auth UX design](docs/auth-design.md): API-key, OAuth/device/headless, Copilot, and token-plan auth boundaries.
 
 ## Development
 

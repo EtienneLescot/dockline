@@ -18,19 +18,10 @@ without rewriting its agent logic.
 Goal: make Dockline useful for applications that want to expose provider choice
 to end users.
 
-- Add internal provider routing plan and package strategy.
-- Define provider metadata for UI selection:
-  - provider id
-  - display name
-  - backing implementation
-  - auth modes supported by the connector
-  - whether model discovery is supported
-  - whether account-backed auth is planned or implemented
-- Add first provider catalog surface for installed providers, not for every
-  model on the market.
 - Add provider-side docs/examples for `testConnection()` and `listModels()`.
-- Add model/runtime option metadata where providers expose it at runtime,
-  including reasoning effort controls when supported.
+- Implement concrete provider metadata on native provider packages, not only in
+  `@dockline/providers`.
+- Add first `@dockline/all` implementation.
 
 Deliverable: an app can build a provider picker from Dockline-installed
 connectors without hardcoding every provider manually.
@@ -138,16 +129,18 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 ## Immediate Tickets
 
 1. Decide whether to publish `0.1.0-alpha.0` now.
-2. Add provider metadata types for provider-picker UX.
-3. Add installed-provider catalog/listing helpers.
-4. Implement `@dockline/providers` explicit provider imports.
-5. Design optional `@dockline/all` batteries-included import.
-6. Decide whether broad provider coverage should start with Vercel AI SDK,
+2. Add provider-side docs/examples for `testConnection()` and `listModels()`.
+3. Implement concrete provider metadata on `@dockline/openrouter` and
+   `@dockline/openai-compatible`.
+4. Add first `@dockline/all` implementation.
+5. Decide whether broad provider coverage should start with Vercel AI SDK,
    LangChain, or both.
-7. Draft the first official-auth design for OAuth/PKCE and device code.
+6. Start first native or upstream-backed provider package beyond OpenRouter.
 
 ## Current Focus
 
-Next decision:
+Next autonomous batch:
 
-- Publish `0.1.0-alpha.0` now, or do one provider-picker metadata pass first.
+- Concrete provider metadata on implemented providers.
+- First `@dockline/all` package.
+- Provider-side discovery examples.
