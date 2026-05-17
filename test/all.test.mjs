@@ -39,9 +39,22 @@ test("@dockline/all exposes the full implemented and planned provider set", () =
     "openaiOAuth",
   ]);
 
+  const providers = allProviders();
   assert.deepEqual(
-    allProviders().map((provider) => provider.id),
+    providers.map((provider) => provider.id),
     expectedProviderIds,
+  );
+  assert.equal(
+    providers.find((provider) => provider.id === "openai")?.metadata.supportsConnectionTest,
+    false,
+  );
+  assert.equal(
+    providers.find((provider) => provider.id === "anthropic")?.metadata.supportsConnectionTest,
+    false,
+  );
+  assert.equal(
+    providers.find((provider) => provider.id === "google")?.metadata.supportsConnectionTest,
+    true,
   );
 });
 

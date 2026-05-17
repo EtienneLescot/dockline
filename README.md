@@ -111,12 +111,12 @@ Current alpha packages:
 - `@dockline/langchain-provider`: structural LangChain-to-Dockline provider bridge
 - `@dockline/providers`: explicit provider factory imports for provider-picker UX
 - `@dockline/all`: optional convenience bundle for listing or registering every provider
+- `@dockline/openai`: LangChain-backed OpenAI API-key provider
+- `@dockline/anthropic`: LangChain-backed Anthropic API-key provider
 
 Planned packages:
 
 - `@dockline/ai-sdk`
-- `@dockline/openai`
-- `@dockline/anthropic`
 - `@dockline/google`
 - `@dockline/codex`
 - `@dockline/github-copilot`

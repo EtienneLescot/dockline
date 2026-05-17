@@ -30,9 +30,7 @@ hand.
   packages for OpenAI, Anthropic, Google Gemini, and Mistral; keep Vercel AI SDK
   as a secondary backing or ecosystem adapter.
 - Add LangChain-backed provider packages:
-  - OpenAI
   - Google Gemini
-  - Anthropic
   - Mistral
 - Add native provider packages where major providers are missing or
   under-supported:
@@ -126,16 +124,15 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 ## Immediate Tickets
 
 1. Decide whether to publish `0.1.0-alpha.0` now.
-2. Start LangChain-backed OpenAI provider using `@dockline/langchain-provider`.
-3. Start LangChain-backed Anthropic provider using `@dockline/langchain-provider`.
-4. Add LangChain-backed Google and Mistral providers.
-5. Expand runtime option metadata for reasoning controls once a concrete
+2. Add LangChain-backed Google provider using `@dockline/langchain-provider`.
+3. Add LangChain-backed Mistral provider using `@dockline/langchain-provider`.
+4. Expand runtime option metadata for reasoning controls once a concrete
    provider supports them.
 
 ## Current Focus
 
 Next autonomous batch:
 
-- LangChain-backed OpenAI provider.
-- LangChain-backed Anthropic provider.
+- LangChain-backed Google provider.
+- LangChain-backed Mistral provider.
 - Runtime reasoning option metadata where supported.

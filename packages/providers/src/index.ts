@@ -16,10 +16,28 @@ import {
   type OpenAICompatibleProviderOptions,
 } from "@dockline/openai-compatible";
 import {
+  openai as createOpenAIProvider,
+  type OpenAIConfig,
+  type OpenAIProviderOptions,
+} from "@dockline/openai";
+import {
+  anthropic as createAnthropicProvider,
+  type AnthropicConfig,
+  type AnthropicProviderOptions,
+} from "@dockline/anthropic";
+import {
   createOpenRouterProvider,
   type OpenRouterConfig,
 } from "@dockline/openrouter";
 
+export type {
+  OpenAIConfig,
+  OpenAIProviderOptions,
+} from "@dockline/openai";
+export type {
+  AnthropicConfig,
+  AnthropicProviderOptions,
+} from "@dockline/anthropic";
 export type {
   OpenAICompatibleConfig,
   OpenAICompatibleProviderOptions,
@@ -29,9 +47,7 @@ export type { OpenRouterConfig } from "@dockline/openrouter";
 export type ProviderFactory<Config extends BaseModelConfig = BaseModelConfig> = () => ModelProvider<Config>;
 
 export type PlannedProviderId =
-  | "openai"
   | "google"
-  | "anthropic"
   | "mistral"
   | "minimax"
   | "deepseek"
@@ -72,24 +88,18 @@ export const openaiCompatible = (
   });
 };
 
-export const openai = (): ModelProvider => plannedProvider({
-  id: "openai",
-  displayName: "OpenAI",
-  backing: "langchain",
-  authModes: ["api-key"],
-});
+export const openai = (
+  options?: OpenAIProviderOptions,
+): ModelProvider<OpenAIConfig> => createOpenAIProvider(options);
 export const google = (): ModelProvider => plannedProvider({
   id: "google",
   displayName: "Google Gemini",
   backing: "langchain",
   authModes: ["api-key"],
 });
-export const anthropic = (): ModelProvider => plannedProvider({
-  id: "anthropic",
-  displayName: "Anthropic",
-  backing: "langchain",
-  authModes: ["api-key"],
-});
+export const anthropic = (
+  options?: AnthropicProviderOptions,
+): ModelProvider<AnthropicConfig> => createAnthropicProvider(options);
 export const mistral = (): ModelProvider => plannedProvider({
   id: "mistral",
   displayName: "Mistral",
