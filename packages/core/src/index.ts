@@ -26,6 +26,10 @@ export {
   type NormalizedModelError,
 } from "./errors.js";
 export {
+  FileSystemTokenStore,
+  type FileSystemTokenStoreOptions,
+} from "./filesystem-token-store.js";
+export {
   type AssistantMessage,
   type FileContentPart,
   type ImageContentPart,

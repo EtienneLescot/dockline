@@ -26,13 +26,9 @@ connectors without hardcoding every provider manually.
 Goal: cover major providers broadly without rewriting every API-key connector by
 hand.
 
-- Add native provider packages where major providers are missing or
-  under-supported:
-  - DeepSeek
-  - Moonshot AI
-  - MiniMax
-  - Alibaba/Qwen
 - Keep OpenRouter and OpenAI-compatible as gateway and custom endpoint paths.
+- Add native provider packages only where provider-specific behavior requires
+  it beyond the current OpenAI-compatible presets.
 - Improve normalized errors for provider-specific failures as new providers land.
 
 Deliverable: a developer can expose a broad recognized provider list without
@@ -42,10 +38,7 @@ Dockline becoming a giant handwritten provider zoo.
 
 Goal: support API keys and official account-backed auth paths cleanly.
 
-- Implement built-in `TokenStore` variants:
-  - memory
-  - filesystem
-  - optional OS keychain later
+- Add an optional OS keychain `TokenStore` later.
 - Define OAuth/PKCE and device-code abstractions.
 - Add a small CLI:
   - `dockline login`
@@ -120,14 +113,14 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 1. Decide whether to publish `0.1.0-alpha.0` now.
 2. Expand runtime option metadata for reasoning controls once a concrete
    provider supports them.
-3. Investigate DeepSeek, Moonshot AI, MiniMax, and Alibaba/Qwen package paths:
-   LangChain-backed first when good enough, native package where not.
-4. Implement built-in memory and filesystem `TokenStore` variants.
+3. Define OAuth/PKCE and device-code abstractions on top of `TokenStore`.
+4. Add provider-specific error normalization for the OpenAI-compatible presets
+   as real API failures are observed.
 
 ## Current Focus
 
 Next autonomous batch:
 
-- Provider path decisions for DeepSeek, Moonshot AI, MiniMax, and Alibaba/Qwen.
-- First TokenStore implementation.
 - Runtime reasoning option metadata where supported.
+- OAuth/PKCE and device-code core contracts.
+- npm alpha publication decision.

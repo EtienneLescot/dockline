@@ -65,10 +65,6 @@ export type { OpenRouterConfig } from "@dockline/openrouter";
 export type ProviderFactory<Config extends BaseModelConfig = BaseModelConfig> = () => ModelProvider<Config>;
 
 export type PlannedProviderId =
-  | "minimax"
-  | "deepseek"
-  | "moonshot"
-  | "alibaba"
   | "copilot"
   | "openai-oauth";
 
@@ -76,6 +72,18 @@ export type PlannedProviderOptions = {
   id?: PlannedProviderId;
   displayName?: string;
 };
+
+export type OpenAICompatiblePresetOptions = Omit<
+  OpenAICompatibleProviderOptions,
+  "id" | "displayName" | "baseURL"
+> & {
+  baseURL?: string;
+};
+
+export type DeepSeekConfig = OpenAICompatiblePresetConfig<"deepseek">;
+export type MoonshotConfig = OpenAICompatiblePresetConfig<"moonshot">;
+export type MiniMaxConfig = OpenAICompatiblePresetConfig<"minimax">;
+export type AlibabaConfig = OpenAICompatiblePresetConfig<"alibaba">;
 
 export const openrouter = (): ModelProvider<OpenRouterConfig> => withMetadata(
   createOpenRouterProvider(),
@@ -116,29 +124,41 @@ export const anthropic = (
 export const mistral = (
   options?: MistralProviderOptions,
 ): ModelProvider<MistralConfig> => createMistralProvider(options);
-export const minimax = (): ModelProvider => plannedProvider({
-  id: "minimax",
-  displayName: "MiniMax",
-  backing: "native",
-  authModes: ["api-key"],
-});
-export const deepseek = (): ModelProvider => plannedProvider({
+export const deepseek = (
+  options?: OpenAICompatiblePresetOptions,
+): ModelProvider<DeepSeekConfig> => openAICompatiblePreset({
   id: "deepseek",
   displayName: "DeepSeek",
-  backing: "native",
-  authModes: ["api-key"],
+  baseURL: "https://api.deepseek.com",
+  capabilities: { reasoning: true },
+  options,
 });
-export const moonshot = (): ModelProvider => plannedProvider({
+export const moonshot = (
+  options?: OpenAICompatiblePresetOptions,
+): ModelProvider<MoonshotConfig> => openAICompatiblePreset({
   id: "moonshot",
-  displayName: "Moonshot",
-  backing: "native",
-  authModes: ["api-key"],
+  displayName: "Moonshot AI / Kimi",
+  baseURL: "https://api.moonshot.ai/v1",
+  capabilities: { reasoning: true },
+  options,
 });
-export const alibaba = (): ModelProvider => plannedProvider({
+export const minimax = (
+  options?: OpenAICompatiblePresetOptions,
+): ModelProvider<MiniMaxConfig> => openAICompatiblePreset({
+  id: "minimax",
+  displayName: "MiniMax",
+  baseURL: "https://api.minimax.io/v1",
+  capabilities: { reasoning: true },
+  options,
+});
+export const alibaba = (
+  options?: OpenAICompatiblePresetOptions,
+): ModelProvider<AlibabaConfig> => openAICompatiblePreset({
   id: "alibaba",
   displayName: "Alibaba/Qwen",
-  backing: "native",
-  authModes: ["api-key", "custom"],
+  baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+  capabilities: { reasoning: true },
+  options,
 });
 export const copilot = (): ModelProvider => plannedProvider({
   id: "copilot",
@@ -160,6 +180,47 @@ const withMetadata = <Config extends BaseModelConfig>(
   ...provider,
   metadata,
 });
+
+type OpenAICompatiblePresetConfig<ProviderId extends string> = BaseModelConfig & {
+  provider: ProviderId;
+  apiKey?: string;
+  baseURL?: string;
+  headers?: Record<string, string>;
+  capabilities?: OpenAICompatibleConfig["capabilities"];
+};
+
+type OpenAICompatiblePresetSpec = {
+  id: "deepseek" | "moonshot" | "minimax" | "alibaba";
+  displayName: string;
+  baseURL: string;
+  capabilities?: OpenAICompatibleProviderOptions["capabilities"];
+  options?: OpenAICompatiblePresetOptions;
+};
+
+const openAICompatiblePreset = <ProviderId extends OpenAICompatiblePresetSpec["id"]>(
+  spec: OpenAICompatiblePresetSpec & { id: ProviderId },
+): ModelProvider<OpenAICompatiblePresetConfig<ProviderId>> => {
+  const provider = createOpenAICompatibleProvider({
+    ...spec.options,
+    id: spec.id,
+    displayName: spec.displayName,
+    baseURL: spec.options?.baseURL ?? spec.baseURL,
+    capabilities: {
+      ...spec.capabilities,
+      ...spec.options?.capabilities,
+    },
+  });
+
+  return withMetadata(provider, {
+    ...provider.metadata,
+    id: spec.id,
+    displayName: spec.displayName,
+    backing: "openai-compatible",
+    authModes: ["api-key"],
+    supportsModelDiscovery: true,
+    supportsConnectionTest: true,
+  }) as unknown as ModelProvider<OpenAICompatiblePresetConfig<ProviderId>>;
+};
 
 type PlannedProviderSpec = {
   id: PlannedProviderId;

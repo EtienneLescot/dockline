@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  alibaba,
   anthropic,
   copilot,
   deepseek,
   google,
   mistral,
   minimax,
+  moonshot,
   openai,
   openaiCompatible,
   openaiOAuth,
@@ -32,31 +34,58 @@ test("@dockline/providers exports implemented provider factories", () => {
   assert.equal(compatible.metadata.backing, "openai-compatible");
 });
 
-test("@dockline/providers exports planned provider placeholders", async () => {
+test("@dockline/providers exports OpenAI-compatible provider presets", async () => {
   const provider = minimax();
   assert.equal(provider.id, "minimax");
   assert.equal(provider.displayName, "MiniMax");
-  assert.equal(provider.metadata.backing, "native");
+  assert.equal(provider.metadata.backing, "openai-compatible");
   assert.deepEqual(provider.metadata.authModes, ["api-key"]);
+  assert.equal(provider.metadata.supportsModelDiscovery, true);
+  assert.equal(provider.metadata.supportsConnectionTest, true);
 
-  await assert.rejects(
-    provider.createModel({ provider: "minimax", model: "minimax-placeholder" }),
-    /MiniMax provider is planned but not implemented yet/,
-  );
+  const model = await provider.createModel({
+    provider: "minimax",
+    model: "MiniMax-M2.7",
+    apiKey: "test-key",
+  });
 
-  assert.deepEqual(
-    await provider.testConnection?.({ provider: "minimax", model: "minimax-placeholder" }),
-    {
-      ok: false,
-      status: "unsupported",
-      provider: "minimax",
-      model: "minimax-placeholder",
-      message: "MiniMax provider is planned but not implemented yet.",
-      retryable: false,
-    },
-  );
+  assert.equal(model.provider, "minimax");
+  assert.equal(model.id, "MiniMax-M2.7");
+  assert.equal(model.capabilities.reasoning, true);
 
-  assert.equal(deepseek().metadata.supportsModelDiscovery, false);
+  assert.equal(deepseek().metadata.backing, "openai-compatible");
+  assert.equal(deepseek().metadata.supportsModelDiscovery, true);
+  assert.equal(moonshot().displayName, "Moonshot AI / Kimi");
+  assert.equal(alibaba().displayName, "Alibaba/Qwen");
+});
+
+test("@dockline/providers presets allow base URL overrides", async () => {
+  const originalFetch = globalThis.fetch;
+  const urls = [];
+  globalThis.fetch = async (url) => {
+    urls.push(String(url));
+    return new Response(JSON.stringify({ data: [{ id: "qwen-test" }] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+
+  const provider = alibaba({ baseURL: "https://example.test/compatible-mode/v1" });
+
+  try {
+    const result = await provider.testConnection?.({
+      provider: "alibaba",
+      model: "qwen-test",
+      apiKey: "test-key",
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.provider, "alibaba");
+    assert.equal(result.model, "qwen-test");
+    assert.deepEqual(urls, ["https://example.test/compatible-mode/v1/models"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("@dockline/providers delegates implemented factories to provider packages", async () => {

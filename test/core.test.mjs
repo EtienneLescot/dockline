@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import {
+  FileSystemTokenStore,
   MemoryTokenStore,
   ProviderRegistry,
   assertCapabilities,
@@ -408,4 +412,96 @@ test("MemoryTokenStore copies token records on read and write", async () => {
 
   await store.delete("test");
   assert.equal(await store.get("test"), null);
+});
+
+test("FileSystemTokenStore persists token records without exposing keys as paths", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "dockline-token-store-"));
+  const store = new FileSystemTokenStore({ directory });
+  const key = "../provider/account";
+  const token = {
+    accessToken: "access",
+    refreshToken: "refresh",
+    expiresAt: Date.now() + 60_000,
+    scopes: ["email"],
+    metadata: { provider: "test" },
+  };
+
+  try {
+    await store.set(key, token);
+    token.scopes.push("mutated");
+    token.metadata.provider = "mutated";
+
+    const files = await readdir(directory);
+    assert.equal(files.length, 1);
+    assert.equal(files[0].endsWith(".json"), true);
+    assert.equal(files[0].includes(".."), false);
+    assert.equal(files[0].includes("/"), false);
+
+    const reloadedStore = new FileSystemTokenStore({ directory });
+    const stored = await reloadedStore.get(key);
+    assert.deepEqual(stored, {
+      accessToken: "access",
+      refreshToken: "refresh",
+      expiresAt: token.expiresAt,
+      scopes: ["email"],
+      metadata: { provider: "test" },
+    });
+
+    stored.scopes.push("read-mutation");
+    assert.deepEqual((await reloadedStore.get(key)).scopes, ["email"]);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("FileSystemTokenStore overwrites atomically and deletes idempotently", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "dockline-token-store-"));
+  const store = new FileSystemTokenStore({ directory });
+
+  try {
+    await store.set("test", { accessToken: "first" });
+    await store.set("test", { accessToken: "second", scopes: ["profile"] });
+
+    assert.deepEqual(await store.get("test"), {
+      accessToken: "second",
+      scopes: ["profile"],
+      refreshToken: undefined,
+      expiresAt: undefined,
+      metadata: undefined,
+    });
+
+    const files = await readdir(directory);
+    assert.deepEqual(files.filter((file) => file.endsWith(".tmp")), []);
+
+    await store.delete("test");
+    await store.delete("test");
+    assert.equal(await store.get("test"), null);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("FileSystemTokenStore rejects malformed stored records without including secrets", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "dockline-token-store-"));
+  const store = new FileSystemTokenStore({ directory });
+
+  try {
+    await store.set("test", { accessToken: "secret-access-token" });
+    const [file] = await readdir(directory);
+    await writeFile(join(directory, file), "{\"accessToken\":42,\"refreshToken\":\"secret-refresh-token\"}\n");
+
+    await assert.rejects(
+      () => store.get("test"),
+      (error) =>
+        error instanceof Error &&
+        /malformed/.test(error.message) &&
+        !error.message.includes("secret-access-token") &&
+        !error.message.includes("secret-refresh-token"),
+    );
+
+    const raw = await readFile(join(directory, file), "utf8");
+    assert.equal(raw.includes("secret-refresh-token"), true);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

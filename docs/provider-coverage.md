@@ -19,6 +19,14 @@ Keep `openrouter` and `openai-compatible` on Dockline's existing
 OpenAI-compatible transport with configurable base URLs. Do not route them
 through LangChain or Vercel AI SDK by default.
 
+Use OpenAI-compatible presets for DeepSeek, Moonshot/Kimi, MiniMax, and
+Alibaba/Qwen in the API-key MVP. Their official docs expose OpenAI-compatible
+base URLs, and Dockline already owns a tested OpenAI-compatible transport with
+streaming, tool calls, model discovery, connection tests, and reasoning-delta
+parsing. Native packages remain appropriate later for Token Plan/account flows,
+Anthropic-compatible variants, DashScope-native features, or richer
+provider-specific runtime options.
+
 Use native Dockline packages for providers that are missing upstream, where
 upstream behavior is insufficient, or where Dockline needs official
 account-backed auth, token storage, richer connection testing, provider-specific
@@ -67,11 +75,11 @@ The initial coverage decision is therefore:
 | `mistral` | LangChain API-key package | API key first. | If upstream coverage misses model discovery, tools, structured output, or runtime options Dockline needs. |
 | `openrouter` | Native OpenAI-compatible transport with OpenRouter base URL | API key and OpenRouter app metadata headers. | Already native as `@dockline/openrouter`. |
 | `openai-compatible` | Native OpenAI-compatible transport with custom base URL | API key and custom headers. | Already native as `@dockline/openai-compatible`. |
-| `deepseek` | Evaluate upstream support after the first four providers | API key first. | Build native if upstream support is weak or if provider-specific behavior matters. |
-| `moonshot` | Evaluate upstream support after the first four providers | API key first; account flow only if documented. | Build native if missing upstream or auth/runtime behavior requires it. |
-| `minimax` | Evaluate upstream support after the first four providers | API key first. | Build native if missing upstream or if token-plan behavior must be isolated. |
+| `deepseek` | OpenAI-compatible preset with `https://api.deepseek.com` | API key first. | Native only if provider-specific behavior exceeds the generic transport. |
+| `moonshot` | OpenAI-compatible preset with `https://api.moonshot.ai/v1` | API key first; account flow only if documented. | Native only if auth/runtime behavior requires it. |
+| `minimax` | OpenAI-compatible preset with `https://api.minimax.io/v1` | API key first. | Native if Token Plan, Anthropic-compatible behavior, or interleaved-thinking semantics need separate handling. |
 | `minimax-token-plan` | Native only if officially documented | Official token-plan/subscription flow only. | Keep separate from API-key MiniMax. |
-| `alibaba` | Evaluate upstream support after the first four providers | API key/cloud credential path first. | Build native only as a focused Qwen/DashScope connector, not as a general cloud SDK. |
+| `alibaba` | OpenAI-compatible preset with `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`, overridable per region | API key/cloud credential path first. | Native only as a focused Qwen/DashScope connector, not as a general cloud SDK. |
 
 ## Implementation Sequence
 
@@ -81,23 +89,25 @@ The initial coverage decision is therefore:
 2. Implement LangChain-backed provider packages for `anthropic`, `openai`,
    `google`, and `mistral` with stable Dockline provider ids and API-key auth
    metadata.
-3. Add provider-owned `testConnection()` and `listModels()` behavior where the
+3. Add OpenAI-compatible presets for DeepSeek, Moonshot/Kimi, MiniMax, and
+   Alibaba/Qwen before adding new backings.
+4. Add provider-owned `testConnection()` and `listModels()` behavior where the
    upstream package exposes enough documented API surface. If not, mark the
    metadata accurately instead of faking support.
-4. Normalize errors from these packages into Dockline's existing error shape,
+5. Normalize errors from these packages into Dockline's existing error shape,
    preserving provider-specific details under a namespaced field.
-5. Add the providers to `@dockline/all` behind explicit backing controls so
+6. Add the providers to `@dockline/all` behind explicit backing controls so
    integrators can exclude LangChain dependencies.
-6. Evaluate gaps after the first four providers:
+7. Evaluate gaps after the first provider waves:
    - model discovery quality;
    - streaming/tool-call parity;
    - structured output behavior;
    - reasoning/runtime option support;
    - browser, edge, serverless, and Node compatibility;
    - terms and official auth needs.
-7. Build native Dockline packages for any major provider or auth mode where the
+8. Build native Dockline packages for any major provider or auth mode where the
    LangChain-backed path is insufficient.
-8. Add Vercel AI SDK as a second backing only when there is a clear reason:
+9. Add Vercel AI SDK as a second backing only when there is a clear reason:
    better provider coverage, better web/edge runtime behavior, or direct demand
    from AI SDK host applications.
 
