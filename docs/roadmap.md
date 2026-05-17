@@ -16,9 +16,7 @@ Deliverable: a JS/TS app can switch between OpenRouter and a local endpoint with
 
 Goal: expose real behavior instead of flattening providers into a fake universal model.
 
-- Add concrete capability profiles for provider/model combinations where maintainable.
-- Implement provider-side `testConnection()` hooks where useful.
-- Implement provider-side `listModels()` hooks where reasonable.
+- Add code-backed capability profile constants where maintainable.
 - Represent tool calling modes explicitly:
   - native
   - emulated
@@ -28,7 +26,7 @@ Goal: expose real behavior instead of flattening providers into a fake universal
   - provider-native
   - prompt fallback
   - unsupported
-- Improve normalized errors for common provider failures.
+- Improve normalized errors for additional provider-specific failures.
 
 Deliverable: Dockline is reliable enough for agents to make routing decisions from capabilities.
 
@@ -82,15 +80,12 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 ## Immediate Tickets
 
 1. Decide whether to publish `0.1.0-alpha.0` now.
-2. Add provider-side `testConnection()` for `@dockline/openai-compatible`.
-3. Add provider-side `listModels()` for `@dockline/openai-compatible`.
-4. Add concrete capability profiles for current known package defaults.
-5. Improve normalized error mapping for more provider-specific failures.
+2. Add code-backed capability profile constants for current package defaults.
+3. Improve normalized error mapping for additional provider-specific failures.
+4. Decide whether Phase 2 discovery hooks need provider-specific docs examples.
 
 ## Current Focus
 
-Next autonomous batch:
+Next decision:
 
-- Provider-side discovery hooks.
-- Concrete capability profile data.
-- Final publish decision for `0.1.0-alpha.0`.
+- Publish `0.1.0-alpha.0` now, or do one small code-backed profile pass first.

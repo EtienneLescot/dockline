@@ -3,7 +3,9 @@ import test from "node:test";
 import {
   createModel,
   globalProviderRegistry,
+  listProviderModels,
   ProviderRegistry,
+  testProviderConnection,
 } from "../packages/core/dist/index.js";
 import { OpenAICompatibleChatModel } from "../packages/openai-compatible/dist/index.js";
 import {
@@ -154,6 +156,195 @@ test("OpenRouter sends requests to the OpenRouter base URL with provider headers
         },
       },
     });
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("OpenRouter listModels fetches OpenRouter models with provider headers", async () => {
+  const previousFetch = globalThis.fetch;
+  const requests = [];
+
+  globalThis.fetch = async (url, init) => {
+    requests.push({ url, init });
+
+    return new Response(
+      JSON.stringify({
+        data: [
+          { id: "openai/gpt-4o-mini", name: "GPT-4o mini" },
+          { id: "anthropic/claude-3.5-sonnet" },
+          { name: "missing id" },
+        ],
+      }),
+      {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      },
+    );
+  };
+
+  try {
+    const registry = new ProviderRegistry();
+    registry.register(createOpenRouterProvider());
+
+    const models = await listProviderModels(
+      {
+        provider: "openrouter",
+        apiKey: "openrouter-key",
+        baseURL: "https://example.invalid/should-not-be-used",
+        headers: {
+          "X-Custom": "custom-value",
+        },
+        appName: "Dockline Tests",
+        appURL: "https://dockline.example",
+      },
+      undefined,
+      registry,
+    );
+
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, `${OPENROUTER_BASE_URL}/models`);
+    assert.equal(requests[0].init.method, "GET");
+    assert.equal(requests[0].init.headers.authorization, "Bearer openrouter-key");
+    assert.equal(requests[0].init.headers["X-Custom"], "custom-value");
+    assert.equal(requests[0].init.headers["X-Title"], "Dockline Tests");
+    assert.equal(requests[0].init.headers["HTTP-Referer"], "https://dockline.example");
+    assert.deepEqual(models, [
+      { id: "openai/gpt-4o-mini", displayName: "GPT-4o mini", provider: "openrouter" },
+      { id: "anthropic/claude-3.5-sonnet", displayName: undefined, provider: "openrouter" },
+    ]);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("OpenRouter testConnection reports success from the provider models endpoint", async () => {
+  const previousFetch = globalThis.fetch;
+  const requests = [];
+
+  globalThis.fetch = async (url, init) => {
+    requests.push({ url, init });
+
+    return new Response(JSON.stringify({ data: [] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+
+  try {
+    const registry = new ProviderRegistry();
+    registry.register(createOpenRouterProvider());
+
+    const result = await testProviderConnection(
+      {
+        provider: "openrouter",
+        model: "openai/gpt-4o-mini",
+        apiKey: "openrouter-key",
+        baseURL: "https://example.invalid/should-not-be-used",
+      },
+      undefined,
+      registry,
+    );
+
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, `${OPENROUTER_BASE_URL}/models`);
+    assert.equal(requests[0].init.headers.authorization, "Bearer openrouter-key");
+    assert.deepEqual(result, {
+      ok: true,
+      status: "ok",
+      provider: "openrouter",
+      model: "openai/gpt-4o-mini",
+    });
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("OpenRouter testConnection reports unauthorized auth failures", async () => {
+  const previousFetch = globalThis.fetch;
+
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        error: {
+          message: "Invalid API key",
+        },
+      }),
+      {
+        status: 401,
+        statusText: "Unauthorized",
+        headers: { "content-type": "application/json" },
+      },
+    );
+
+  try {
+    const registry = new ProviderRegistry();
+    registry.register(createOpenRouterProvider());
+
+    const result = await testProviderConnection(
+      {
+        provider: "openrouter",
+        model: "openai/gpt-4o-mini",
+        apiKey: "bad-key",
+      },
+      undefined,
+      registry,
+    );
+
+    assert.deepEqual(result, {
+      ok: false,
+      status: "unauthorized",
+      provider: "openrouter",
+      model: "openai/gpt-4o-mini",
+      message: "Invalid API key",
+      retryable: false,
+      details: { statusCode: 401 },
+    });
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("OpenRouter listModels throws provider errors for failed model discovery", async () => {
+  const previousFetch = globalThis.fetch;
+
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        error: {
+          message: "Rate limited",
+        },
+      }),
+      {
+        status: 429,
+        statusText: "Too Many Requests",
+        headers: { "content-type": "application/json" },
+      },
+    );
+
+  try {
+    const registry = new ProviderRegistry();
+    registry.register(createOpenRouterProvider());
+
+    await assert.rejects(
+      () =>
+        listProviderModels(
+          {
+            provider: "openrouter",
+            apiKey: "openrouter-key",
+          },
+          undefined,
+          registry,
+        ),
+      (error) => {
+        assert.equal(error.code, "RATE_LIMITED");
+        assert.equal(error.provider, "openrouter");
+        assert.equal(error.statusCode, 429);
+        assert.equal(error.retryable, true);
+        assert.match(error.message, /Rate limited/);
+        return true;
+      },
+    );
   } finally {
     globalThis.fetch = previousFetch;
   }

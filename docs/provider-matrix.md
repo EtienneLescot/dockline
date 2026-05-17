@@ -23,6 +23,24 @@ in this repository for it.
 | `@dockline/openrouter` | Implemented | OpenRouter connector built on `@dockline/openai-compatible`. | Yes | Yes | Native where the selected OpenRouter model/provider supports it | JSON object/schema request mapping through the OpenAI-compatible connector | Inherited from OpenAI-compatible path; actual support depends on routed model | Yes when returned by OpenRouter/model | API key, optional app metadata headers | No model-listing or provider/model capability profile is implemented yet. Treat model-specific support as runtime/provider dependent. |
 | `@dockline/langchain` | Adapter | LangChain JS adapter for `UniversalChatModel`. | Delegates to wrapped model | Delegates to wrapped model | Accepts/binds tools and delegates to wrapped model | Delegates response format to wrapped model | Converts LangChain-style image URL parts to Dockline image parts | Maps Dockline usage to LangChain-style metadata | Uses wrapped model auth | This package is not a provider and does not add capabilities beyond the wrapped Dockline model. |
 
+## Alpha Default Capability Profiles
+
+The rows below are documentation defaults for the `0.1.0-alpha.0` package
+behavior. They are not complete model catalogs and do not guarantee that a
+specific model, routed provider, deployment, or account entitlement supports a
+feature. Runtime config overrides and provider errors remain authoritative.
+
+| Profile | Applies to | Default capabilities | Modes | Override guidance |
+| --- | --- | --- | --- | --- |
+| `openai-compatible` | `@dockline/openai-compatible` model instances when config does not override capabilities. | `textGeneration`, `streaming`, `toolCalling`, `structuredOutput`, and `vision` default to `true`; all other `ModelCapabilities` flags remain false/unknown after expansion. | `toolCallingMode: native`; `structuredOutputMode: json-schema`. | Override per endpoint/model when a server lacks tools, JSON schema, image input, or streaming, or when it offers extra features not represented by the default. |
+| `openrouter` | `@dockline/openrouter` model instances, via the inherited OpenAI-compatible connector path. | Same broad defaults as `openai-compatible`: `textGeneration`, `streaming`, `toolCalling`, `structuredOutput`, and `vision` default to `true`; routed model support can differ. | `toolCallingMode: native`; `structuredOutputMode: json-schema`. | Treat as provider-level request-shape guidance only. Add model-specific overlays later only with maintainable OpenRouter/model source data. |
+| `langchain` | Documentation-only adapter profile for `@dockline/langchain`. | No independent capability claims. Use the wrapped Dockline model's capabilities and profile. | No independent mode claims. Tool binding and response format are passed through to the wrapped model. | Do not use this as provider truth. It exists only to describe adapter behavior and translation boundaries. |
+
+If these defaults become exported constants, place them in package-local
+`src/capability-profiles.ts` files for the owning packages. Keep shared types
+and merge helpers in `@dockline/core`, but keep provider-owned profile data out
+of core unless a dedicated registry/catalog package is introduced.
+
 ## Planned Sensitive Connectors
 
 Sensitive connectors are connectors that may involve user accounts, subscription
@@ -39,8 +57,10 @@ documented, legal provider flows.
 
 ## Alpha Notes
 
-- Dockline does not currently maintain provider/model-specific capability
-  profiles. Consumers should still check declared capabilities and expect
+- Dockline documents alpha default capability profiles for implemented
+  connectors and adapters, but does not currently ship provider/model-specific
+  profile registries or generated model catalogs.
+- Consumers should still check declared capabilities and expect
   provider-specific failures for unsupported model features.
 - `provider.listModels()` and `provider.testConnection()` are roadmap items, not
   implemented behavior.

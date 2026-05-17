@@ -47,6 +47,85 @@ Numeric limits such as `contextWindow` and `maxOutputTokens` are best-effort
 metadata. They may vary by provider routing, account tier, regional deployment,
 or provider-side changes.
 
+## Alpha Default Profiles
+
+These profiles document Dockline's current alpha defaults. They describe what
+the connector currently assumes when a caller does not pass runtime capability
+overrides. They are not exhaustive provider or model truth, and they should not
+be used as a substitute for provider documentation, model cards, account-level
+entitlements, or runtime errors.
+
+OpenAI-compatible endpoints share one broad provider-level default because each
+server decides which models and request options it actually supports:
+
+```ts
+const openAICompatibleDefaultProfile = {
+  provider: "openai-compatible",
+  displayName: "OpenAI-compatible",
+  capabilities: {
+    textGeneration: true,
+    streaming: true,
+    toolCalling: true,
+    structuredOutput: true,
+    vision: true,
+  },
+  toolCallingMode: "native",
+  structuredOutputMode: "json-schema",
+  notes: [
+    "Provider-level default only; individual OpenAI-compatible servers and models can support less or more.",
+    "Callers can override capabilities through model/provider config when the exact endpoint behavior is known.",
+    "URL image parts are mapped for vision-style requests; file parts remain outside this default connector path.",
+  ],
+} satisfies CapabilityProfile;
+```
+
+OpenRouter currently uses the OpenAI-compatible connector with OpenRouter
+headers and base URL. Its default profile should therefore mirror the inherited
+OpenAI-compatible request path while making model routing explicit:
+
+```ts
+const openRouterDefaultProfile = {
+  provider: "openrouter",
+  displayName: "OpenRouter",
+  capabilities: {
+    textGeneration: true,
+    streaming: true,
+    toolCalling: true,
+    structuredOutput: true,
+    vision: true,
+  },
+  toolCallingMode: "native",
+  structuredOutputMode: "json-schema",
+  notes: [
+    "Inherited alpha default from the OpenAI-compatible connector.",
+    "Actual support depends on the selected OpenRouter model, routed upstream provider, account, and request options.",
+    "This is not a model catalog; model-specific OpenRouter profiles should be added only when Dockline has maintainable source data.",
+  ],
+} satisfies CapabilityProfile;
+```
+
+LangChain is an adapter, not a provider. It should not claim capabilities beyond
+the wrapped `UniversalChatModel`; any documentation-only profile for it should
+be empty and clearly marked as delegating:
+
+```ts
+const langChainAdapterDefaultProfile = {
+  provider: "langchain",
+  displayName: "LangChain adapter",
+  capabilities: {},
+  notes: [
+    "Adapter profile only; use the wrapped Dockline model profile for actual model capabilities.",
+    "Tool binding, response format, streaming, vision parts, and token metadata are delegated or translated.",
+    "The adapter does not add auth, provider access, or model support on its own.",
+  ],
+} satisfies CapabilityProfile;
+```
+
+For all three profiles, omitted capability flags still mean unknown. The alpha
+defaults above intentionally mention only behavior that the current packages
+map in code. A provider/model can still reject a request even when a default
+profile marks the broad capability as `true`.
+
 ## Merge Policy
 
 Known profiles should be treated as defaults. Runtime overrides win because
@@ -89,8 +168,26 @@ contract is promoted.
 - Runtime provider implementations should continue to validate and normalize
   provider errors instead of relying on profiles as enforcement.
 
+## Future Code Constants
+
+When Dockline promotes profile data from documentation into package code, keep
+the constants close to the packages that own the behavior:
+
+- OpenAI-compatible defaults should live in
+  `packages/openai-compatible/src/capability-profiles.ts`.
+- OpenRouter defaults and any future OpenRouter model-specific overlays should
+  live in `packages/openrouter/src/capability-profiles.ts`.
+- LangChain adapter guidance should live in
+  `packages/langchain/src/capability-profiles.ts` only if the package needs a
+  documentation/export surface; actual capability data should continue to come
+  from the wrapped model.
+- Shared types, merge helpers, and registry-neutral utilities belong in
+  `packages/core/src/capabilities.ts`. A central provider/model catalog should
+  not live in core unless Dockline later adds an explicit registry package.
+
 ## Current Boundary
 
-Dockline does not yet ship provider/model registries of known profiles. The core
-helpers only define the shared shape and merge behavior so provider packages can
-adopt profiles incrementally without coupling themselves to a central catalog.
+Dockline does not yet ship provider/model registries of known profiles or the
+constants shown above. The core helpers only define the shared shape and merge
+behavior so provider packages can adopt profiles incrementally without coupling
+themselves to a central catalog.

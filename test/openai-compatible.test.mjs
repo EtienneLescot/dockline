@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import http from "node:http";
 import test from "node:test";
-import { createModel } from "../packages/core/dist/index.js";
+import {
+  createModel,
+  listProviderModels,
+  testProviderConnection,
+} from "../packages/core/dist/index.js";
 import { registerOpenAICompatibleProvider } from "../packages/openai-compatible/dist/index.js";
 
 test("OpenAI-compatible generate normalizes text and usage", async () => {
@@ -502,6 +506,173 @@ test("OpenAI-compatible request payload omits empty optional fields", async () =
     });
 
     assert.equal(result.text, "ok");
+  } finally {
+    await server.close();
+  }
+});
+
+test("OpenAI-compatible listModels fetches standard OpenAI-compatible model descriptors", async () => {
+  const server = await createServer(async (req, res) => {
+    assert.equal(req.method, "GET");
+    assert.equal(req.url, "/v1/models");
+    assert.equal(req.headers.authorization, "Bearer test-key");
+    assert.equal(req.headers["x-custom"], "custom");
+
+    sendJson(res, {
+      object: "list",
+      data: [
+        { id: "alpha", object: "model" },
+        { id: "beta", object: "model", name: "Beta Model" },
+        { object: "model" },
+        null,
+      ],
+    });
+  });
+
+  try {
+    registerOpenAICompatibleProvider();
+
+    const models = await listProviderModels({
+      provider: "openai-compatible",
+      baseURL: server.url,
+      apiKey: "test-key",
+      headers: { "X-Custom": "custom" },
+    });
+
+    assert.deepEqual(models, [
+      { id: "alpha", provider: "openai-compatible", displayName: undefined },
+      { id: "beta", provider: "openai-compatible", displayName: "Beta Model" },
+    ]);
+  } finally {
+    await server.close();
+  }
+});
+
+test("OpenAI-compatible testConnection validates a configured model when models are listed", async () => {
+  const server = await createServer(async (req, res) => {
+    assert.equal(req.method, "GET");
+    assert.equal(req.url, "/v1/models");
+    sendJson(res, { data: [{ id: "alpha" }, { id: "beta" }] });
+  });
+
+  try {
+    registerOpenAICompatibleProvider();
+
+    const result = await testProviderConnection({
+      provider: "openai-compatible",
+      baseURL: server.url,
+      model: "beta",
+    });
+
+    assert.deepEqual(result, {
+      ok: true,
+      status: "ok",
+      provider: "openai-compatible",
+      model: "beta",
+      retryable: false,
+      details: { modelCount: 2 },
+    });
+  } finally {
+    await server.close();
+  }
+});
+
+test("OpenAI-compatible testConnection reports configured model misses as misconfigured", async () => {
+  const server = await createServer(async (_req, res) => {
+    sendJson(res, { data: [{ id: "alpha" }] });
+  });
+
+  try {
+    registerOpenAICompatibleProvider();
+
+    const result = await testProviderConnection({
+      provider: "openai-compatible",
+      baseURL: server.url,
+      model: "missing",
+    });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.status, "misconfigured");
+    assert.equal(result.provider, "openai-compatible");
+    assert.equal(result.model, "missing");
+    assert.equal(result.retryable, false);
+    assert.match(result.message, /not found/);
+  } finally {
+    await server.close();
+  }
+});
+
+test("OpenAI-compatible testConnection normalizes unauthorized and unavailable responses", async () => {
+  const cases = [
+    {
+      status: 401,
+      body: { error: { message: "bad key" } },
+      expectedStatus: "unauthorized",
+      retryable: false,
+    },
+    {
+      status: 429,
+      body: { error: { message: "slow down" } },
+      expectedStatus: "unavailable",
+      retryable: true,
+    },
+  ];
+
+  for (const testCase of cases) {
+    const server = await createServer(async (_req, res) => {
+      res.writeHead(testCase.status, { "content-type": "application/json" });
+      res.end(JSON.stringify(testCase.body));
+    });
+
+    try {
+      registerOpenAICompatibleProvider();
+
+      const result = await testProviderConnection({
+        provider: "openai-compatible",
+        baseURL: server.url,
+        model: "test-model",
+      });
+
+      assert.equal(result.ok, false);
+      assert.equal(result.status, testCase.expectedStatus);
+      assert.equal(result.provider, "openai-compatible");
+      assert.equal(result.model, "test-model");
+      assert.equal(result.message, testCase.body.error.message);
+      assert.equal(result.retryable, testCase.retryable);
+      assert.deepEqual(result.details, { statusCode: testCase.status });
+    } finally {
+      await server.close();
+    }
+  }
+});
+
+test("OpenAI-compatible testConnection reports missing or malformed model discovery as misconfigured", async () => {
+  registerOpenAICompatibleProvider();
+
+  const missingBaseURL = await testProviderConnection({
+    provider: "openai-compatible",
+    model: "test-model",
+  });
+
+  assert.equal(missingBaseURL.ok, false);
+  assert.equal(missingBaseURL.status, "misconfigured");
+  assert.equal(missingBaseURL.retryable, false);
+
+  const server = await createServer(async (_req, res) => {
+    sendJson(res, { object: "list" });
+  });
+
+  try {
+    const malformed = await testProviderConnection({
+      provider: "openai-compatible",
+      baseURL: server.url,
+      model: "test-model",
+    });
+
+    assert.equal(malformed.ok, false);
+    assert.equal(malformed.status, "misconfigured");
+    assert.equal(malformed.retryable, false);
+    assert.match(malformed.message, /data array/);
   } finally {
     await server.close();
   }

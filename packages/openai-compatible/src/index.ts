@@ -6,10 +6,13 @@ import {
   type GenerateInput,
   type GenerateResult,
   type ModelCapabilities,
+  type ModelDescriptor,
   type ModelEvent,
   type ModelMessage,
   type ModelProvider,
+  type ProviderDiscoveryConfig,
   type ResponseFormat,
+  type TestConnectionResult,
   type TokenUsage,
   type ToolCall,
   type ToolDefinition,
@@ -49,6 +52,10 @@ type OpenAIChatCompletionResponse = {
     completion_tokens?: number;
     total_tokens?: number;
   };
+};
+
+type OpenAIModelsResponse = {
+  data?: unknown;
 };
 
 type ToolCallAccumulator = {
@@ -220,19 +227,17 @@ export const createOpenAICompatibleProvider = (
   id: options.id ?? "openai-compatible",
   displayName: options.displayName ?? "OpenAI-compatible",
   validateConfig(config: unknown): asserts config is OpenAICompatibleConfig {
-    const candidate = config as Partial<OpenAICompatibleConfig> | null;
-    if (!candidate?.baseURL && !options.baseURL) {
-      throw new DocklineError({
-        code: "INVALID_REQUEST",
-        message: "OpenAI-compatible provider requires a baseURL.",
-        provider: options.id ?? candidate?.provider,
-        model: candidate?.model,
-        retryable: false,
-      });
-    }
+    void config;
   },
   async createModel(config) {
+    assertHasBaseURL(config, options);
     return createOpenAICompatibleModel(config, options);
+  },
+  async testConnection(config) {
+    return testOpenAICompatibleConnection(config, options);
+  },
+  async listModels(config) {
+    return listOpenAICompatibleModels(config, options);
   },
 });
 
@@ -243,6 +248,235 @@ export const registerOpenAICompatibleProvider = (
 };
 
 const normalizeBaseURL = (baseURL: string): string => baseURL.replace(/\/+$/, "");
+
+const assertHasBaseURL = (
+  config: Partial<OpenAICompatibleConfig> | null,
+  options: OpenAICompatibleProviderOptions,
+): void => {
+  if (!config?.baseURL && !options.baseURL) {
+    throw new DocklineError({
+      code: "INVALID_REQUEST",
+      message: "OpenAI-compatible provider requires a baseURL.",
+      provider: options.id ?? config?.provider,
+      model: config?.model,
+      retryable: false,
+    });
+  }
+};
+
+const getConfiguredBaseURL = (
+  config: Pick<ProviderDiscoveryConfig, "baseURL">,
+  options: OpenAICompatibleProviderOptions,
+): string | undefined => {
+  const baseURL = options.baseURL ?? config.baseURL;
+  return baseURL ? normalizeBaseURL(baseURL) : undefined;
+};
+
+const getDiscoveryHeaders = (
+  config: Pick<ProviderDiscoveryConfig, "apiKey" | "headers">,
+  options: OpenAICompatibleProviderOptions,
+): Record<string, string> => ({
+  ...(config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {}),
+  ...options.headers,
+  ...config.headers,
+});
+
+const testOpenAICompatibleConnection = async (
+  config: OpenAICompatibleConfig,
+  options: OpenAICompatibleProviderOptions,
+): Promise<TestConnectionResult> => {
+  const provider = options.id ?? config.provider;
+  const baseURL = getConfiguredBaseURL(config, options);
+
+  if (!baseURL) {
+    return {
+      ok: false,
+      status: "misconfigured",
+      provider,
+      model: config.model,
+      message: "OpenAI-compatible provider requires a baseURL.",
+      retryable: false,
+    };
+  }
+
+  const result = await requestOpenAICompatibleModels(config, options);
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      status: toConnectionStatus(result.status),
+      provider,
+      model: config.model,
+      message: result.message,
+      retryable: result.retryable,
+      details: { statusCode: result.status },
+    };
+  }
+
+  if (!Array.isArray(result.body.data)) {
+    return {
+      ok: false,
+      status: "misconfigured",
+      provider,
+      model: config.model,
+      message: "OpenAI-compatible models response must include a data array.",
+      retryable: false,
+    };
+  }
+
+  const models = toModelDescriptors(result.body, provider);
+  if (config.model && models.length > 0 && !models.some((model) => model.id === config.model)) {
+    return {
+      ok: false,
+      status: "misconfigured",
+      provider,
+      model: config.model,
+      message: `Model "${config.model}" was not found in the provider model list.`,
+      retryable: false,
+    };
+  }
+
+  return {
+    ok: true,
+    status: "ok",
+    provider,
+    model: config.model,
+    retryable: false,
+    details: { modelCount: models.length },
+  };
+};
+
+const listOpenAICompatibleModels = async (
+  config: ProviderDiscoveryConfig,
+  options: OpenAICompatibleProviderOptions,
+): Promise<ModelDescriptor[]> => {
+  const provider = options.id ?? config.provider;
+  const baseURL = getConfiguredBaseURL(config, options);
+
+  if (!baseURL) {
+    throw new DocklineError({
+      code: "INVALID_REQUEST",
+      message: "OpenAI-compatible provider requires a baseURL to list models.",
+      provider,
+      retryable: false,
+    });
+  }
+
+  const result = await requestOpenAICompatibleModels(config, options);
+
+  if (!result.ok) {
+    throw new DocklineError({
+      code: toErrorCode(result.status, result.message),
+      message: result.message,
+      provider,
+      model: config.model,
+      statusCode: result.status,
+      retryable: result.retryable,
+    });
+  }
+
+  if (!Array.isArray(result.body.data)) {
+    throw new DocklineError({
+      code: "INVALID_REQUEST",
+      message: "OpenAI-compatible models response must include a data array.",
+      provider,
+      model: config.model,
+      retryable: false,
+    });
+  }
+
+  return toModelDescriptors(result.body, provider);
+};
+
+type ModelsRequestResult =
+  | {
+      ok: true;
+      body: OpenAIModelsResponse;
+    }
+  | {
+      ok: false;
+      status: number;
+      message: string;
+      retryable: boolean;
+    };
+
+const requestOpenAICompatibleModels = async (
+  config: Pick<ProviderDiscoveryConfig, "apiKey" | "baseURL" | "headers">,
+  options: OpenAICompatibleProviderOptions,
+): Promise<ModelsRequestResult> => {
+  const baseURL = getConfiguredBaseURL(config, options);
+  if (!baseURL) {
+    return {
+      ok: false,
+      status: 400,
+      message: "OpenAI-compatible provider requires a baseURL.",
+      retryable: false,
+    };
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${baseURL}/models`, {
+      method: "GET",
+      headers: getDiscoveryHeaders(config, options),
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      status: 503,
+      message: error instanceof Error ? error.message : "OpenAI-compatible models request failed.",
+      retryable: true,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      status: response.status,
+      message: await readErrorMessage(response),
+      retryable: response.status === 429 || response.status >= 500,
+    };
+  }
+
+  try {
+    return { ok: true, body: (await response.json()) as OpenAIModelsResponse };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 422,
+      message: error instanceof Error ? error.message : "OpenAI-compatible models response was invalid JSON.",
+      retryable: false,
+    };
+  }
+};
+
+const toModelDescriptors = (
+  body: OpenAIModelsResponse,
+  provider: string,
+): ModelDescriptor[] => {
+  if (!Array.isArray(body.data)) return [];
+
+  return body.data.flatMap((item): ModelDescriptor[] => {
+    if (!item || typeof item !== "object") return [];
+    const record = item as Record<string, unknown>;
+    if (typeof record.id !== "string" || record.id.length === 0) return [];
+
+    return [
+      {
+        id: record.id,
+        provider,
+        displayName: typeof record.name === "string" ? record.name : undefined,
+      },
+    ];
+  });
+};
+
+const toConnectionStatus = (status: number): TestConnectionResult["status"] => {
+  if (status === 401 || status === 403) return "unauthorized";
+  if (status === 429) return "unavailable";
+  if (status === 400 || status === 404 || (status >= 405 && status < 500)) return "misconfigured";
+  return "unavailable";
+};
 
 const stringifyContent = (content: ModelMessage["content"]): string => {
   if (!Array.isArray(content)) return content ?? "";
