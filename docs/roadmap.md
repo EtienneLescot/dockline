@@ -26,12 +26,6 @@ connectors without hardcoding every provider manually.
 Goal: cover major providers broadly without rewriting every API-key connector by
 hand.
 
-- Decided - Start broad API-key coverage with LangChain-backed provider
-  packages for OpenAI, Anthropic, Google Gemini, and Mistral; keep Vercel AI SDK
-  as a secondary backing or ecosystem adapter.
-- Add LangChain-backed provider packages:
-  - Google Gemini
-  - Mistral
 - Add native provider packages where major providers are missing or
   under-supported:
   - DeepSeek
@@ -124,15 +118,16 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 ## Immediate Tickets
 
 1. Decide whether to publish `0.1.0-alpha.0` now.
-2. Add LangChain-backed Google provider using `@dockline/langchain-provider`.
-3. Add LangChain-backed Mistral provider using `@dockline/langchain-provider`.
-4. Expand runtime option metadata for reasoning controls once a concrete
+2. Expand runtime option metadata for reasoning controls once a concrete
    provider supports them.
+3. Investigate DeepSeek, Moonshot AI, MiniMax, and Alibaba/Qwen package paths:
+   LangChain-backed first when good enough, native package where not.
+4. Implement built-in memory and filesystem `TokenStore` variants.
 
 ## Current Focus
 
 Next autonomous batch:
 
-- LangChain-backed Google provider.
-- LangChain-backed Mistral provider.
+- Provider path decisions for DeepSeek, Moonshot AI, MiniMax, and Alibaba/Qwen.
+- First TokenStore implementation.
 - Runtime reasoning option metadata where supported.

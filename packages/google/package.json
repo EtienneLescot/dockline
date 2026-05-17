@@ -1,13 +1,13 @@
 {
-  "name": "@dockline/providers",
+  "name": "@dockline/google",
   "version": "0.1.0-alpha.0",
-  "description": "Explicit provider factory imports for Dockline.",
+  "description": "Google Gemini LangChain-backed connector for Dockline.",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/EtienneLescot/dockline.git",
-    "directory": "packages/providers"
+    "directory": "packages/google"
   },
   "homepage": "https://github.com/EtienneLescot/dockline#readme",
   "bugs": {
@@ -16,9 +16,11 @@
   "keywords": [
     "ai",
     "agents",
+    "gemini",
+    "google",
+    "langchain",
     "llm",
     "model-provider",
-    "providers",
     "typescript"
   ],
   "main": "./dist/index.js",
@@ -41,12 +43,15 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@dockline/anthropic": "0.1.0-alpha.0",
     "@dockline/core": "0.1.0-alpha.0",
-    "@dockline/google": "0.1.0-alpha.0",
-    "@dockline/mistral": "0.1.0-alpha.0",
-    "@dockline/openai": "0.1.0-alpha.0",
-    "@dockline/openai-compatible": "0.1.0-alpha.0",
-    "@dockline/openrouter": "0.1.0-alpha.0"
+    "@dockline/langchain-provider": "0.1.0-alpha.0"
+  },
+  "peerDependencies": {
+    "@langchain/google-genai": ">=0.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@langchain/google-genai": {
+      "optional": true
+    }
   }
 }

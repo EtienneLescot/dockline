@@ -7,12 +7,7 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../anthropic" },
     { "path": "../core" },
-    { "path": "../google" },
-    { "path": "../mistral" },
-    { "path": "../openai" },
-    { "path": "../openai-compatible" },
-    { "path": "../openrouter" }
+    { "path": "../langchain-provider" }
   ]
 }

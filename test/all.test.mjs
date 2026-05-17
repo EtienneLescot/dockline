@@ -54,7 +54,11 @@ test("@dockline/all exposes the full implemented and planned provider set", () =
   );
   assert.equal(
     providers.find((provider) => provider.id === "google")?.metadata.supportsConnectionTest,
-    true,
+    false,
+  );
+  assert.equal(
+    providers.find((provider) => provider.id === "mistral")?.metadata.supportsConnectionTest,
+    false,
   );
 });
 

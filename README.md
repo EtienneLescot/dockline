@@ -113,11 +113,12 @@ Current alpha packages:
 - `@dockline/all`: optional convenience bundle for listing or registering every provider
 - `@dockline/openai`: LangChain-backed OpenAI API-key provider
 - `@dockline/anthropic`: LangChain-backed Anthropic API-key provider
+- `@dockline/google`: LangChain-backed Google Gemini API-key provider
+- `@dockline/mistral`: LangChain-backed Mistral API-key provider
 
 Planned packages:
 
 - `@dockline/ai-sdk`
-- `@dockline/google`
 - `@dockline/codex`
 - `@dockline/github-copilot`
 - `@dockline/vscode-lm`

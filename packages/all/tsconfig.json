@@ -9,6 +9,8 @@
   "references": [
     { "path": "../anthropic" },
     { "path": "../core" },
+    { "path": "../google" },
+    { "path": "../mistral" },
     { "path": "../openai" },
     { "path": "../providers" }
   ]

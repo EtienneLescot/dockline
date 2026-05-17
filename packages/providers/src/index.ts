@@ -26,6 +26,16 @@ import {
   type AnthropicProviderOptions,
 } from "@dockline/anthropic";
 import {
+  google as createGoogleProvider,
+  type GoogleConfig,
+  type GoogleProviderOptions,
+} from "@dockline/google";
+import {
+  mistral as createMistralProvider,
+  type MistralConfig,
+  type MistralProviderOptions,
+} from "@dockline/mistral";
+import {
   createOpenRouterProvider,
   type OpenRouterConfig,
 } from "@dockline/openrouter";
@@ -39,6 +49,14 @@ export type {
   AnthropicProviderOptions,
 } from "@dockline/anthropic";
 export type {
+  GoogleConfig,
+  GoogleProviderOptions,
+} from "@dockline/google";
+export type {
+  MistralConfig,
+  MistralProviderOptions,
+} from "@dockline/mistral";
+export type {
   OpenAICompatibleConfig,
   OpenAICompatibleProviderOptions,
 } from "@dockline/openai-compatible";
@@ -47,8 +65,6 @@ export type { OpenRouterConfig } from "@dockline/openrouter";
 export type ProviderFactory<Config extends BaseModelConfig = BaseModelConfig> = () => ModelProvider<Config>;
 
 export type PlannedProviderId =
-  | "google"
-  | "mistral"
   | "minimax"
   | "deepseek"
   | "moonshot"
@@ -91,21 +107,15 @@ export const openaiCompatible = (
 export const openai = (
   options?: OpenAIProviderOptions,
 ): ModelProvider<OpenAIConfig> => createOpenAIProvider(options);
-export const google = (): ModelProvider => plannedProvider({
-  id: "google",
-  displayName: "Google Gemini",
-  backing: "langchain",
-  authModes: ["api-key"],
-});
+export const google = (
+  options?: GoogleProviderOptions,
+): ModelProvider<GoogleConfig> => createGoogleProvider(options);
 export const anthropic = (
   options?: AnthropicProviderOptions,
 ): ModelProvider<AnthropicConfig> => createAnthropicProvider(options);
-export const mistral = (): ModelProvider => plannedProvider({
-  id: "mistral",
-  displayName: "Mistral",
-  backing: "langchain",
-  authModes: ["api-key"],
-});
+export const mistral = (
+  options?: MistralProviderOptions,
+): ModelProvider<MistralConfig> => createMistralProvider(options);
 export const minimax = (): ModelProvider => plannedProvider({
   id: "minimax",
   displayName: "MiniMax",
