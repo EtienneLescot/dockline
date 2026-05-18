@@ -5,6 +5,7 @@ import { ProviderRegistry } from "../packages/core/dist/index.js";
 import {
   allProviderFactories,
   allProviders,
+  createAISDKChatProvider,
   registerAllProviders,
 } from "../packages/all/dist/index.js";
 
@@ -72,4 +73,9 @@ test("@dockline/all registers providers into a supplied registry", () => {
   );
 
   assert.doesNotThrow(() => registerAllProviders(registry));
+});
+
+test("@dockline/all re-exports the AI SDK bridge without registering it as a concrete provider", () => {
+  assert.equal(typeof createAISDKChatProvider, "function");
+  assert.equal("aiSDK" in allProviderFactories, false);
 });

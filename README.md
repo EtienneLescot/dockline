@@ -75,6 +75,31 @@ const result = await model.generate({
 console.log(result.text);
 ```
 
+To delegate long-tail provider coverage to the Vercel AI SDK, wrap any AI SDK
+`LanguageModelV3` provider with `@dockline/ai-sdk`:
+
+```bash
+npm install @dockline/core @dockline/ai-sdk @ai-sdk/openai
+```
+
+```ts
+import { openai } from "@ai-sdk/openai";
+import { createModel, globalProviderRegistry } from "@dockline/core";
+import { createAISDKChatProvider } from "@dockline/ai-sdk";
+
+globalProviderRegistry.set(createAISDKChatProvider({
+  id: "openai-ai-sdk",
+  displayName: "OpenAI via AI SDK",
+  metadata: { authModes: ["api-key"] },
+  createLanguageModel: (config) => openai(config.model),
+}));
+
+const model = await createModel({
+  provider: "openai-ai-sdk",
+  model: "gpt-4.1-mini",
+});
+```
+
 ## Why
 
 Every JS agent framework still makes you bring your own model glue:
@@ -107,6 +132,7 @@ Current alpha packages:
 - `@dockline/core`: common interfaces, message types, events, capabilities, errors, provider registry
 - `@dockline/openai-compatible`: generic OpenAI-compatible chat completions connector
 - `@dockline/openrouter`: OpenRouter provider built on the OpenAI-compatible connector
+- `@dockline/ai-sdk`: structural Vercel AI SDK `LanguageModelV3` bridge
 - `@dockline/langchain`: structural LangChain/LangGraph JS adapter for Dockline chat models
 - `@dockline/langchain-provider`: structural LangChain-to-Dockline provider bridge
 - `@dockline/providers`: explicit provider factory imports for provider-picker UX
@@ -118,7 +144,6 @@ Current alpha packages:
 
 Planned packages:
 
-- `@dockline/ai-sdk`
 - `@dockline/codex`
 - `@dockline/github-copilot`
 - `@dockline/vscode-lm`

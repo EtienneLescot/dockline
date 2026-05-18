@@ -121,7 +121,7 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
    provider documentation exposes concrete request parameters.
 3. Add provider-specific error normalization for the OpenAI-compatible presets
    as real API failures are observed.
-4. Add the next ecosystem adapter, likely Vercel AI SDK first.
+4. Expand `@dockline/ai-sdk` from structural bridge to provider catalog/backing.
 5. Write per-provider usage docs for the current provider list.
 
 ## Current Focus
@@ -130,4 +130,4 @@ Next autonomous batch:
 
 - npm smoke-test script and release hygiene docs.
 - Provider-specific docs for install/config/runtime options.
-- Vercel AI SDK adapter spike.
+- Vercel AI SDK provider catalog/backing.

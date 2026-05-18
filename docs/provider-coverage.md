@@ -33,10 +33,10 @@ account-backed auth, token storage, richer connection testing, provider-specific
 runtime options, or legal/security boundaries that a generic API-key adapter
 should not own.
 
-Vercel AI SDK should remain a planned secondary backing and ecosystem adapter,
-not the first coverage dependency. Revisit it after the LangChain-backed
-provider path proves the Dockline provider contracts, or use it selectively
-when it has materially better support for a provider/runtime target.
+Vercel AI SDK is now a structural bridge through `@dockline/ai-sdk`. The next
+step is to use it as a broad provider catalog/backing, so Dockline can delegate
+long-tail API-key coverage to maintained upstream providers instead of growing a
+handwritten provider package for every integration.
 
 ## LangChain Versus Vercel AI SDK
 

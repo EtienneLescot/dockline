@@ -39,6 +39,13 @@ export {
   type PlannedProviderOptions,
   type ProviderFactory,
 } from "@dockline/providers";
+export {
+  createAISDKChatProvider,
+  registerAISDKChatProvider,
+  type AISDKLanguageModelV3Like,
+  type AISDKProviderConfig,
+  type AISDKProviderOptions,
+} from "@dockline/ai-sdk";
 
 export const allProviderFactories = {
   openrouter,

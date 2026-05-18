@@ -1,13 +1,13 @@
 {
-  "name": "@dockline/all",
+  "name": "@dockline/ai-sdk",
   "version": "0.1.0-alpha.1",
-  "description": "Optional convenience bundle for registering every Dockline provider.",
+  "description": "Vercel AI SDK bridge for Dockline chat models and providers.",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/EtienneLescot/dockline.git",
-    "directory": "packages/all"
+    "directory": "packages/ai-sdk"
   },
   "homepage": "https://github.com/EtienneLescot/dockline#readme",
   "bugs": {
@@ -16,10 +16,11 @@
   "keywords": [
     "ai",
     "agents",
+    "ai-sdk",
     "llm",
     "model-provider",
-    "providers",
-    "typescript"
+    "typescript",
+    "vercel"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -41,8 +42,14 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@dockline/ai-sdk": "0.1.0-alpha.1",
-    "@dockline/core": "0.1.0-alpha.1",
-    "@dockline/providers": "0.1.0-alpha.1"
+    "@dockline/core": "0.1.0-alpha.1"
+  },
+  "peerDependencies": {
+    "@ai-sdk/provider": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@ai-sdk/provider": {
+      "optional": true
+    }
   }
 }
