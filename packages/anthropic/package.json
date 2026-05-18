@@ -1,6 +1,6 @@
 {
   "name": "@dockline/anthropic",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Anthropic LangChain-backed chat provider for Dockline.",
   "type": "module",
   "license": "MIT",
@@ -42,8 +42,8 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@dockline/core": "0.1.0-alpha.0",
-    "@dockline/langchain-provider": "0.1.0-alpha.0"
+    "@dockline/core": "0.1.0-alpha.1",
+    "@dockline/langchain-provider": "0.1.0-alpha.1"
   },
   "peerDependencies": {
     "@langchain/anthropic": ">=0.3.0",

@@ -1,6 +1,6 @@
 {
   "name": "@dockline/google",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Google Gemini LangChain-backed connector for Dockline.",
   "type": "module",
   "license": "MIT",
@@ -43,8 +43,8 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@dockline/core": "0.1.0-alpha.0",
-    "@dockline/langchain-provider": "0.1.0-alpha.0"
+    "@dockline/core": "0.1.0-alpha.1",
+    "@dockline/langchain-provider": "0.1.0-alpha.1"
   },
   "peerDependencies": {
     "@langchain/google-genai": ">=0.2.0"

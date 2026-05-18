@@ -4,7 +4,7 @@ Dockline is a capability-aware model connector layer for JS/TS agentic applicati
 
 It is not an agent framework. It is the lower-level model/runtime connection layer that an agent, CLI, IDE extension, workflow orchestrator, or SaaS app can use to connect to model APIs, OpenAI-compatible endpoints, gateways, subscription-backed sources, and agent runtimes through explicit capabilities.
 
-Alpha package: `0.1.0-alpha.0`.
+Alpha package: `0.1.0-alpha.1`.
 
 ## Quickstart
 

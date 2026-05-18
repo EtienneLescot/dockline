@@ -1,6 +1,6 @@
 {
   "name": "@dockline/langchain-provider",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Generic LangChain-compatible provider bridge for Dockline chat models.",
   "type": "module",
   "license": "MIT",
@@ -41,7 +41,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@dockline/core": "0.1.0-alpha.0"
+    "@dockline/core": "0.1.0-alpha.1"
   },
   "peerDependencies": {
     "@langchain/core": ">=0.3.0"

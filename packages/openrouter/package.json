@@ -1,6 +1,6 @@
 {
   "name": "@dockline/openrouter",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "OpenRouter chat completions connector for Dockline.",
   "type": "module",
   "license": "MIT",
@@ -41,7 +41,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@dockline/core": "0.1.0-alpha.0",
-    "@dockline/openai-compatible": "0.1.0-alpha.0"
+    "@dockline/core": "0.1.0-alpha.1",
+    "@dockline/openai-compatible": "0.1.0-alpha.1"
   }
 }

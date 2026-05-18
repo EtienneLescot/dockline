@@ -1,6 +1,6 @@
 # Alpha Release Notes
 
-Dockline `0.1.0-alpha.0` is the first npm-ready alpha of the capability-aware
+Dockline `0.1.0-alpha.1` is the first npm-ready alpha of the capability-aware
 model connector layer for JS/TS agents.
 
 ## What Ships

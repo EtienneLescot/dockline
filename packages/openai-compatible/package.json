@@ -1,6 +1,6 @@
 {
   "name": "@dockline/openai-compatible",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "OpenAI-compatible chat completions connector for Dockline.",
   "type": "module",
   "license": "MIT",
@@ -42,6 +42,6 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@dockline/core": "0.1.0-alpha.0"
+    "@dockline/core": "0.1.0-alpha.1"
   }
 }
