@@ -17,6 +17,7 @@
       "@dockline/ai-sdk": ["packages/ai-sdk/src/index.ts"],
       "@dockline/all": ["packages/all/src/index.ts"],
       "@dockline/anthropic": ["packages/anthropic/src/index.ts"],
+      "@dockline/catalog": ["packages/catalog/src/index.ts"],
       "@dockline/google": ["packages/google/src/index.ts"],
       "@dockline/langchain": ["packages/langchain/src/index.ts"],
       "@dockline/langchain-provider": ["packages/langchain-provider/src/index.ts"],

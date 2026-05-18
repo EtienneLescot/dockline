@@ -1,13 +1,13 @@
 {
-  "name": "@dockline/all",
+  "name": "@dockline/catalog",
   "version": "0.1.0-alpha.1",
-  "description": "Optional convenience bundle for registering every Dockline provider.",
+  "description": "Provider catalog for Dockline provider-picker integrations.",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/EtienneLescot/dockline.git",
-    "directory": "packages/all"
+    "directory": "packages/catalog"
   },
   "homepage": "https://github.com/EtienneLescot/dockline#readme",
   "bugs": {
@@ -18,7 +18,7 @@
     "agents",
     "llm",
     "model-provider",
-    "providers",
+    "provider-catalog",
     "typescript"
   ],
   "main": "./dist/index.js",
@@ -41,9 +41,6 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@dockline/ai-sdk": "0.1.0-alpha.1",
-    "@dockline/catalog": "0.1.0-alpha.1",
-    "@dockline/core": "0.1.0-alpha.1",
-    "@dockline/providers": "0.1.0-alpha.1"
+    "@dockline/core": "0.1.0-alpha.1"
   }
 }

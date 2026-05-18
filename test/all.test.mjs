@@ -6,6 +6,7 @@ import {
   allProviderFactories,
   allProviders,
   createAISDKChatProvider,
+  listCatalogProviderIds,
   registerAllProviders,
 } from "../packages/all/dist/index.js";
 
@@ -78,4 +79,8 @@ test("@dockline/all registers providers into a supplied registry", () => {
 test("@dockline/all re-exports the AI SDK bridge without registering it as a concrete provider", () => {
   assert.equal(typeof createAISDKChatProvider, "function");
   assert.equal("aiSDK" in allProviderFactories, false);
+});
+
+test("@dockline/all re-exports the provider catalog", () => {
+  assert.ok(listCatalogProviderIds().includes("openai-chatgpt-account"));
 });

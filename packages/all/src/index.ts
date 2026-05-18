@@ -46,6 +46,21 @@ export {
   type AISDKProviderConfig,
   type AISDKProviderOptions,
 } from "@dockline/ai-sdk";
+export {
+  getCatalogProvider,
+  listCatalogProviderIds,
+  listCatalogProviders,
+  providerCatalog,
+  requireCatalogProvider,
+  type CatalogSourceId,
+  type CapabilityGroup,
+  type ProviderCatalogEntry,
+  type ProviderCatalogFilter,
+  type ProviderCatalogId,
+  type ProviderCatalogSource,
+  type ProviderCatalogStatus,
+  type ProviderKind,
+} from "@dockline/catalog";
 
 export const allProviderFactories = {
   openrouter,

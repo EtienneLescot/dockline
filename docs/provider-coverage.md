@@ -7,25 +7,19 @@ capabilities, not the upstream SDK chosen for a given connector.
 
 ## Recommendation
 
-Start broad API-key coverage with LangChain JS provider packages for the first
-recognized provider set:
+Start broad provider-picker coverage with a catalog, not handwritten provider
+packages. `@dockline/catalog` uses Vercel AI SDK providers as the primary
+directory, then adds LangChain JS chat-model providers missing from that
+directory, then adds Dockline-native account-backed gaps such as ChatGPT account
+auth and GitHub Copilot device flow.
 
-- `anthropic` through `@langchain/anthropic`
-- `openai` through `@langchain/openai`
-- `google` through `@langchain/google-genai`
-- `mistral` through `@langchain/mistralai`
+Keep gateways as providers. OpenRouter and Vercel AI Gateway are not neutral
+directories in Dockline's product model; they are provider choices because the
+user brings an OpenRouter or Vercel Gateway credential.
 
-Keep `openrouter` and `openai-compatible` on Dockline's existing
-OpenAI-compatible transport with configurable base URLs. Do not route them
-through LangChain or Vercel AI SDK by default.
-
-Use OpenAI-compatible presets for DeepSeek, Moonshot/Kimi, MiniMax, and
-Alibaba/Qwen in the API-key MVP. Their official docs expose OpenAI-compatible
-base URLs, and Dockline already owns a tested OpenAI-compatible transport with
-streaming, tool calls, model discovery, connection tests, and reasoning-delta
-parsing. Native packages remain appropriate later for Token Plan/account flows,
-Anthropic-compatible variants, DashScope-native features, or richer
-provider-specific runtime options.
+Executable provider backings come after catalog metadata. A catalog entry can be
+backed by Vercel AI SDK, LangChain, Dockline's OpenAI-compatible transport, a
+gateway-specific connector, or a future native account-backed connector.
 
 Use native Dockline packages for providers that are missing upstream, where
 upstream behavior is insufficient, or where Dockline needs official
@@ -33,10 +27,9 @@ account-backed auth, token storage, richer connection testing, provider-specific
 runtime options, or legal/security boundaries that a generic API-key adapter
 should not own.
 
-Vercel AI SDK is now a structural bridge through `@dockline/ai-sdk`. The next
-step is to use it as a broad provider catalog/backing, so Dockline can delegate
-long-tail API-key coverage to maintained upstream providers instead of growing a
-handwritten provider package for every integration.
+Vercel AI SDK is now a structural bridge through `@dockline/ai-sdk` and the
+primary upstream directory for `@dockline/catalog`. LangChain remains the
+complementary directory for providers that AI SDK does not cover.
 
 ## LangChain Versus Vercel AI SDK
 
@@ -54,16 +47,14 @@ for Dockline's provider-picker goal.
 | Bundle/runtime pressure | Provider packages and LangChain core can be heavier; keep them optional and out of `@dockline/core`. | Often attractive for web/edge/serverless surfaces, but still adds provider dependencies. | Use explicit provider packages and optional `@dockline/all` inclusion controls. |
 | Official account auth | Generic API-key providers should not own OAuth/device-code/token-store behavior. | Same limitation for Dockline's purposes. | Native Dockline packages own official account auth in both cases. |
 
-The initial coverage decision is therefore:
+The current coverage decision is therefore:
 
-1. Use LangChain-backed Dockline provider packages for the first API-key
-   provider set.
-2. Keep OpenRouter and arbitrary OpenAI-compatible endpoints on the native
-   OpenAI-compatible transport.
-3. Build native Dockline packages for missing providers and official auth.
-4. Add Vercel AI SDK backing only after the provider metadata, discovery, and
-   runtime-option contract is stable enough to support a second backing without
-   creating divergent behavior for the same provider id.
+1. Use `@dockline/catalog` as the provider-picker source of truth.
+2. Use Vercel AI SDK as the primary upstream directory/backing.
+3. Add LangChain JS chat providers that are absent from AI SDK.
+4. Treat gateways such as OpenRouter and Vercel AI Gateway as providers.
+5. Build native Dockline connectors only for gaps upstream libraries do not
+   solve cleanly, especially official OAuth/device/account-backed flows.
 
 ## Target Map
 

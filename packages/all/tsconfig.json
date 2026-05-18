@@ -9,6 +9,7 @@
   "references": [
     { "path": "../ai-sdk" },
     { "path": "../anthropic" },
+    { "path": "../catalog" },
     { "path": "../core" },
     { "path": "../google" },
     { "path": "../mistral" },

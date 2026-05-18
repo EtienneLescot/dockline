@@ -132,6 +132,7 @@ Current alpha packages:
 - `@dockline/core`: common interfaces, message types, events, capabilities, errors, provider registry
 - `@dockline/openai-compatible`: generic OpenAI-compatible chat completions connector
 - `@dockline/openrouter`: OpenRouter provider built on the OpenAI-compatible connector
+- `@dockline/catalog`: provider-picker catalog aggregated from AI SDK, LangChain, and Dockline-native gaps
 - `@dockline/ai-sdk`: structural Vercel AI SDK `LanguageModelV3` bridge
 - `@dockline/langchain`: structural LangChain/LangGraph JS adapter for Dockline chat models
 - `@dockline/langchain-provider`: structural LangChain-to-Dockline provider bridge
@@ -178,6 +179,7 @@ Dockline must not use scraped tokens, private undocumented endpoints, or provide
 
 ## Design Docs
 
+- [Provider catalog](docs/provider-catalog.md): user-facing provider list, source calculation, gateway treatment, and catalog metadata.
 - [Provider routing](docs/provider-routing.md): provider package strategy, optional `@dockline/all`, and provider-picker metadata.
 - [Provider discovery](docs/discovery.md): provider metadata, connection testing, model listing, and picker examples.
 - [Auth UX design](docs/auth-design.md): API-key, OAuth/device/headless, Copilot, and token-plan auth boundaries.
