@@ -6,9 +6,12 @@ test("provider picker example uses provider metadata APIs", async () => {
   const source = await readFile(new URL("../examples/provider-picker.ts", import.meta.url), "utf8");
 
   assert.match(source, /listProviderMetadata/);
-  assert.match(source, /globalProviderRegistry\.set/);
+  assert.match(source, /registerAllProviders/);
+  assert.match(source, /createModel/);
   assert.match(source, /authModes/);
   assert.match(source, /runtimeOptions/);
+  assert.match(source, /DOCKLINE_RUN/);
+  assert.match(source, /redactSecrets/);
 });
 
 test("discovery example covers connection and model discovery flow", async () => {

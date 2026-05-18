@@ -156,6 +156,17 @@ Dockline must not use scraped tokens, private undocumented endpoints, or provide
 - [Provider routing](docs/provider-routing.md): provider package strategy, optional `@dockline/all`, and provider-picker metadata.
 - [Provider discovery](docs/discovery.md): provider metadata, connection testing, model listing, and picker examples.
 - [Auth UX design](docs/auth-design.md): API-key, OAuth/device/headless, Copilot, and token-plan auth boundaries.
+- [Alpha release notes](docs/release-alpha.md): current package surface, known limits, and publish checklist.
+
+## Examples
+
+```bash
+npm run build
+npx tsx examples/provider-picker.ts
+```
+
+The provider-picker example runs as a dry-run by default. Set `DOCKLINE_RUN=1`
+and provider credentials to create a model and stream a response.
 
 ## Development
 
