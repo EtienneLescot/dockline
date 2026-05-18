@@ -8,7 +8,11 @@ Only remaining or active work is listed here. Completed items are removed from t
 
 Goal: prove immediate usefulness with a small provider-choice surface area.
 
-- Publish `0.1.0-alpha.0` to npm.
+- Keep npm release hygiene for future alpha cuts:
+  - version packages together
+  - publish in dependency order
+  - smoke-test installs outside the monorepo
+  - keep `alpha` and `latest` dist-tags aligned intentionally
 
 Deliverable: a JS/TS app can switch between OpenRouter and a local endpoint
 without rewriting its agent logic.
@@ -111,15 +115,19 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 
 ## Immediate Tickets
 
-1. Decide whether to publish `0.1.0-alpha.0` now.
+1. Add a smoke-test example or script that installs Dockline from npm outside
+   the monorepo.
 2. Continue expanding runtime option metadata for reasoning controls only where
    provider documentation exposes concrete request parameters.
 3. Add provider-specific error normalization for the OpenAI-compatible presets
    as real API failures are observed.
+4. Add the next ecosystem adapter, likely Vercel AI SDK first.
+5. Write per-provider usage docs for the current provider list.
 
 ## Current Focus
 
 Next autonomous batch:
 
-- Runtime reasoning option metadata where supported.
-- npm alpha publication decision.
+- npm smoke-test script and release hygiene docs.
+- Provider-specific docs for install/config/runtime options.
+- Vercel AI SDK adapter spike.
