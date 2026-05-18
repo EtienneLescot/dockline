@@ -39,7 +39,8 @@ Dockline becoming a giant handwritten provider zoo.
 Goal: support API keys and official account-backed auth paths cleanly.
 
 - Add an optional OS keychain `TokenStore` later.
-- Define OAuth/PKCE and device-code abstractions.
+- Keep OAuth/PKCE and device-code alpha contracts provider-neutral until
+  official-auth connectors prove the shape.
 - Add a small CLI:
   - `dockline login`
   - `dockline logout`
@@ -111,10 +112,9 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 ## Immediate Tickets
 
 1. Decide whether to publish `0.1.0-alpha.0` now.
-2. Expand runtime option metadata for reasoning controls once a concrete
-   provider supports them.
-3. Define OAuth/PKCE and device-code abstractions on top of `TokenStore`.
-4. Add provider-specific error normalization for the OpenAI-compatible presets
+2. Continue expanding runtime option metadata for reasoning controls only where
+   provider documentation exposes concrete request parameters.
+3. Add provider-specific error normalization for the OpenAI-compatible presets
    as real API failures are observed.
 
 ## Current Focus
@@ -122,5 +122,4 @@ Deliverable: Dockline becomes reusable glue across agent frameworks, CLIs, IDE e
 Next autonomous batch:
 
 - Runtime reasoning option metadata where supported.
-- OAuth/PKCE and device-code core contracts.
 - npm alpha publication decision.

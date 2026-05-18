@@ -42,6 +42,10 @@ test("@dockline/providers exports OpenAI-compatible provider presets", async () 
   assert.deepEqual(provider.metadata.authModes, ["api-key"]);
   assert.equal(provider.metadata.supportsModelDiscovery, true);
   assert.equal(provider.metadata.supportsConnectionTest, true);
+  assert.deepEqual(
+    provider.metadata.runtimeOptions.map((option) => option.id),
+    ["temperature", "maxOutputTokens", "providerOptions.reasoning_split"],
+  );
 
   const model = await provider.createModel({
     provider: "minimax",
@@ -55,8 +59,25 @@ test("@dockline/providers exports OpenAI-compatible provider presets", async () 
 
   assert.equal(deepseek().metadata.backing, "openai-compatible");
   assert.equal(deepseek().metadata.supportsModelDiscovery, true);
+  assert.deepEqual(
+    deepseek().metadata.runtimeOptions.map((option) => option.id),
+    [
+      "temperature",
+      "maxOutputTokens",
+      "providerOptions.thinking.type",
+      "providerOptions.reasoning_effort",
+    ],
+  );
   assert.equal(moonshot().displayName, "Moonshot AI / Kimi");
+  assert.deepEqual(
+    moonshot().metadata.runtimeOptions.map((option) => option.id),
+    ["temperature", "maxOutputTokens", "providerOptions.thinking.type"],
+  );
   assert.equal(alibaba().displayName, "Alibaba/Qwen");
+  assert.deepEqual(
+    alibaba().metadata.runtimeOptions.map((option) => option.id),
+    ["temperature", "maxOutputTokens", "providerOptions.enable_thinking"],
+  );
 });
 
 test("@dockline/providers presets allow base URL overrides", async () => {

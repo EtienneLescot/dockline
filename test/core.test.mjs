@@ -25,6 +25,12 @@ import {
   capabilitiesFromProfile,
   mergeCapabilityProfile,
 } from "../packages/core/dist/capabilities.js";
+import {
+  createAuthTokenStoreKey,
+  deleteAuthToken as deleteExperimentalAuthToken,
+  getAuthToken,
+  setAuthToken,
+} from "../packages/core/dist/experimental.js";
 
 const createTestModel = (overrides = {}) => ({
   id: "demo",
@@ -412,6 +418,74 @@ test("MemoryTokenStore copies token records on read and write", async () => {
 
   await store.delete("test");
   assert.equal(await store.get("test"), null);
+});
+
+test("auth token helpers derive stable non-secret TokenStore keys", () => {
+  const key = createAuthTokenStoreKey({
+    provider: "github",
+    authMode: "device-code",
+    subject: "alice@example.com",
+    scopes: ["repo", "codespace", "repo"],
+  });
+
+  assert.equal(
+    key,
+    "auth:provider=github&auth=device-code&subject=alice%40example.com&scope=codespace&scope=repo",
+  );
+  assert.equal(key.includes("access-token"), false);
+
+  assert.throws(
+    () =>
+      createAuthTokenStoreKey({
+        provider: "github",
+        authMode: "device-code",
+        scopes: ["repo", ""],
+      }),
+    /scopes must be non-empty strings/,
+  );
+});
+
+test("auth token helpers require explicit TokenStore writes and clone records", async () => {
+  let stored = null;
+  const store = {
+    async get() {
+      return stored;
+    },
+    async set(_key, value) {
+      stored = value;
+    },
+    async delete() {
+      stored = null;
+    },
+  };
+  const key = { provider: "github", authMode: "device-code", subject: "alice" };
+  const token = {
+    accessToken: "access",
+    refreshToken: "refresh",
+    scopes: ["repo"],
+    metadata: { provider: "github" },
+  };
+
+  assert.equal(await getAuthToken(store, key), null);
+
+  await setAuthToken(store, key, token);
+  token.scopes.push("mutated");
+  token.metadata.provider = "mutated";
+
+  const read = await getAuthToken(store, key);
+  assert.deepEqual(read, {
+    accessToken: "access",
+    refreshToken: "refresh",
+    expiresAt: undefined,
+    scopes: ["repo"],
+    metadata: { provider: "github" },
+  });
+
+  read.scopes.push("read-mutation");
+  assert.deepEqual((await getAuthToken(store, key)).scopes, ["repo"]);
+
+  await deleteExperimentalAuthToken(store, key);
+  assert.equal(await getAuthToken(store, key), null);
 });
 
 test("FileSystemTokenStore persists token records without exposing keys as paths", async () => {

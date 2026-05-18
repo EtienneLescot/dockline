@@ -53,6 +53,8 @@ export type RuntimeOptionDescriptor = {
   displayName?: string;
   description?: string;
   category?: "reasoning" | "sampling" | "output" | "provider-specific" | (string & {});
+  configKey?: string;
+  providerOptionKey?: string;
   required?: boolean;
   defaultValue?: RuntimeOptionValue;
   enumValues?: Array<{

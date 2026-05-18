@@ -7,6 +7,7 @@ import {
   type ProviderBacking,
   type ProviderDiscoveryConfig,
   type ProviderMetadata,
+  type RuntimeOptionDescriptor,
   type TestConnectionResult,
   type UniversalChatModel,
 } from "@dockline/core";
@@ -131,6 +132,7 @@ export const deepseek = (
   displayName: "DeepSeek",
   baseURL: "https://api.deepseek.com",
   capabilities: { reasoning: true },
+  runtimeOptions: deepSeekRuntimeOptions,
   options,
 });
 export const moonshot = (
@@ -140,6 +142,7 @@ export const moonshot = (
   displayName: "Moonshot AI / Kimi",
   baseURL: "https://api.moonshot.ai/v1",
   capabilities: { reasoning: true },
+  runtimeOptions: moonshotRuntimeOptions,
   options,
 });
 export const minimax = (
@@ -149,6 +152,7 @@ export const minimax = (
   displayName: "MiniMax",
   baseURL: "https://api.minimax.io/v1",
   capabilities: { reasoning: true },
+  runtimeOptions: minimaxRuntimeOptions,
   options,
 });
 export const alibaba = (
@@ -158,6 +162,7 @@ export const alibaba = (
   displayName: "Alibaba/Qwen",
   baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
   capabilities: { reasoning: true },
+  runtimeOptions: alibabaRuntimeOptions,
   options,
 });
 export const copilot = (): ModelProvider => plannedProvider({
@@ -194,6 +199,7 @@ type OpenAICompatiblePresetSpec = {
   displayName: string;
   baseURL: string;
   capabilities?: OpenAICompatibleProviderOptions["capabilities"];
+  runtimeOptions?: RuntimeOptionDescriptor[];
   options?: OpenAICompatiblePresetOptions;
 };
 
@@ -219,8 +225,70 @@ const openAICompatiblePreset = <ProviderId extends OpenAICompatiblePresetSpec["i
     authModes: ["api-key"],
     supportsModelDiscovery: true,
     supportsConnectionTest: true,
+    runtimeOptions: appendRuntimeOptions(provider.metadata?.runtimeOptions, spec.runtimeOptions),
   }) as unknown as ModelProvider<OpenAICompatiblePresetConfig<ProviderId>>;
 };
+
+const appendRuntimeOptions = (
+  baseOptions: RuntimeOptionDescriptor[] | undefined,
+  extraOptions: RuntimeOptionDescriptor[] | undefined,
+): RuntimeOptionDescriptor[] | undefined => {
+  if (!extraOptions || extraOptions.length === 0) return baseOptions;
+  return [...(baseOptions ?? []), ...extraOptions];
+};
+
+const thinkingTypeRuntimeOption = (
+  description: string,
+): RuntimeOptionDescriptor => ({
+  id: "providerOptions.thinking.type",
+  type: "enum",
+  displayName: "Thinking mode",
+  description,
+  category: "reasoning",
+  enumValues: [
+    { value: "enabled", displayName: "Enabled" },
+    { value: "disabled", displayName: "Disabled" },
+  ],
+});
+
+const deepSeekRuntimeOptions: RuntimeOptionDescriptor[] = [
+  thinkingTypeRuntimeOption("DeepSeek OpenAI-compatible thinking mode toggle."),
+  {
+    id: "providerOptions.reasoning_effort",
+    type: "enum",
+    displayName: "Reasoning effort",
+    description: "DeepSeek thinking effort for OpenAI-compatible requests.",
+    category: "reasoning",
+    enumValues: [
+      { value: "high", displayName: "High" },
+      { value: "max", displayName: "Max" },
+    ],
+  },
+];
+
+const moonshotRuntimeOptions: RuntimeOptionDescriptor[] = [
+  thinkingTypeRuntimeOption("Moonshot/Kimi thinking mode toggle for supported Kimi models."),
+];
+
+const minimaxRuntimeOptions: RuntimeOptionDescriptor[] = [
+  {
+    id: "providerOptions.reasoning_split",
+    type: "boolean",
+    displayName: "Reasoning split",
+    description: "MiniMax interleaved-thinking format that separates reasoning into reasoning_details.",
+    category: "reasoning",
+  },
+];
+
+const alibabaRuntimeOptions: RuntimeOptionDescriptor[] = [
+  {
+    id: "providerOptions.enable_thinking",
+    type: "boolean",
+    displayName: "Enable thinking",
+    description: "Alibaba/Qwen OpenAI-compatible thinking mode toggle for supported models.",
+    category: "reasoning",
+  },
+];
 
 type PlannedProviderSpec = {
   id: PlannedProviderId;

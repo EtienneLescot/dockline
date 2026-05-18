@@ -12,7 +12,14 @@ import {
   type LangChainChatModelLike,
 } from "@dockline/langchain-provider";
 
-export type OpenAIReasoningEffort = "low" | "medium" | "high" | (string & {});
+export type OpenAIReasoningEffort =
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | (string & {});
 
 export type OpenAIConfig = BaseModelConfig & {
   provider: "openai";
@@ -97,11 +104,15 @@ const openaiRuntimeOptions: RuntimeOptionDescriptor[] = [
     id: "reasoningEffort",
     type: "enum",
     displayName: "Reasoning effort",
+    description: "OpenAI reasoning effort; supported values are model-dependent.",
     category: "reasoning",
     enumValues: [
+      { value: "none", displayName: "None" },
+      { value: "minimal", displayName: "Minimal" },
       { value: "low", displayName: "Low" },
       { value: "medium", displayName: "Medium" },
       { value: "high", displayName: "High" },
+      { value: "xhigh", displayName: "X-high" },
     ],
   },
 ];

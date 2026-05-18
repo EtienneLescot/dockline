@@ -68,9 +68,31 @@ Coding-agent runtime contracts are alpha. Import them from the package
 subpath:
 
 ```ts
-import type { CodingAgentRuntime } from "@dockline/core/experimental";
+import {
+  createAuthTokenStoreKey,
+  setAuthToken,
+  type CodingAgentRuntime,
+  type DeviceCodeAuthProvider,
+  type OAuthPkceAuthProvider,
+} from "@dockline/core/experimental";
 ```
 
 The package root also exposes an `experimental` namespace for discoverability,
 but the `/experimental` subpath is the preferred import for alpha-only types.
 Alpha APIs can change or move before a stable release.
+
+Current alpha contracts include:
+
+- Coding-agent runtime types: `CodingAgentRuntime`, `CodingAgentInput`,
+  `CodingAgentEvent`, and `RuntimeCapabilities`.
+- Official account auth contracts: `OAuthPkceAuthProvider` and
+  `DeviceCodeAuthProvider`, plus request/session/result types for OAuth/PKCE,
+  token refresh/revocation, and device-code polling.
+- Explicit `TokenStore` helpers: `createAuthTokenStoreKey`, `getAuthToken`,
+  `setAuthToken`, and `deleteAuthToken`.
+
+The auth contracts are intentionally provider-neutral. Core does not start a
+browser, poll a provider, exchange authorization codes, refresh tokens, revoke
+tokens, or persist returned tokens automatically. Connectors return structured
+token results, and host applications decide when to call the explicit
+`TokenStore` helpers.

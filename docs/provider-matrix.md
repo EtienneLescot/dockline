@@ -58,6 +58,14 @@ feature. Runtime config overrides and provider errors remain authoritative.
 | `openrouter` | `@dockline/openrouter` model instances, via the inherited OpenAI-compatible connector path. | Same broad defaults as `openai-compatible`: `textGeneration`, `streaming`, `toolCalling`, `structuredOutput`, and `vision` default to `true`; routed model support can differ. | `toolCallingMode: native`; `structuredOutputMode: json-schema`. | Treat as provider-level request-shape guidance only. Add model-specific overlays later only with maintainable OpenRouter/model source data. |
 | `langchain` | Documentation-only adapter profile for `@dockline/langchain`. | No independent capability claims. Use the wrapped Dockline model's capabilities and profile. | No independent mode claims. Tool binding and response format are passed through to the wrapped model. | Do not use this as provider truth. It exists only to describe adapter behavior and translation boundaries. |
 
+OpenAI exposes reasoning-effort runtime metadata for the documented effort
+values on reasoning models. The OpenAI-compatible presets in
+`@dockline/providers` expose only provider-documented request controls:
+DeepSeek `thinking.type` and `reasoning_effort`, Moonshot/Kimi
+`thinking.type`, MiniMax `reasoning_split`, and Alibaba/Qwen
+`enable_thinking`. These remain provider-level request hints, not model-level
+guarantees.
+
 If these defaults become exported constants, place them in package-local
 `src/capability-profiles.ts` files for the owning packages. Keep shared types
 and merge helpers in `@dockline/core`, but keep provider-owned profile data out
