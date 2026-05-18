@@ -1,25 +1,32 @@
 # Alpha Release Notes
 
-Dockline `0.1.0-alpha.1` is the first npm-ready alpha of the capability-aware
-model connector layer for JS/TS agents.
+Dockline `0.1.0-alpha.2` should be the first alpha that reflects the new product
+center:
 
-## What Ships
+> provider catalog + connector resolver for JS/TS agentic apps.
 
-- `@dockline/core`: chat model contracts, messages, streaming events,
-  capabilities, provider registry, discovery helpers, normalized errors,
-  memory/filesystem token stores, and alpha auth/runtime contracts under
-  `@dockline/core/experimental`.
+`0.1.0-alpha.1` shipped the initial core/connectors. The next alpha should ship
+the catalog pivot and avoid presenting Dockline as a generic provider SDK clone.
+
+## What Ships Now
+
+- `@dockline/catalog`: user-facing provider catalog aggregated from Vercel AI
+  SDK, LangChain, and Dockline-native account-backed gaps.
+- `@dockline/core`: contracts, messages, streaming events, provider registry,
+  discovery helpers, normalized errors, token stores, and alpha auth/runtime
+  contracts.
+- `@dockline/ai-sdk`: structural Vercel AI SDK `LanguageModelV3` bridge.
 - `@dockline/openai-compatible`: generic OpenAI-compatible chat completions
-  connector with streaming, tool calls, structured output request shape,
-  model discovery, connection tests, and reasoning deltas.
-- `@dockline/openrouter`: OpenRouter connector on the OpenAI-compatible
-  transport.
+  connector with streaming, tool calls, model discovery, connection tests, and
+  reasoning deltas.
+- `@dockline/openrouter`: OpenRouter gateway connector on the
+  OpenAI-compatible transport.
 - `@dockline/openai`, `@dockline/anthropic`, `@dockline/google`,
-  `@dockline/mistral`: LangChain-backed API-key provider packages.
-- `@dockline/providers`: explicit provider factories for provider-picker UX,
-  including OpenAI-compatible presets for DeepSeek, Moonshot/Kimi, MiniMax, and
+  `@dockline/mistral`: current LangChain-backed API-key provider packages.
+- `@dockline/providers`: explicit executable provider factories, including
+  OpenAI-compatible presets for DeepSeek, Moonshot/Kimi, MiniMax, and
   Alibaba/Qwen.
-- `@dockline/all`: optional convenience bundle for registering or listing all
+- `@dockline/all`: convenience bundle that re-exports the catalog, bridges, and
   current provider factories.
 - `@dockline/langchain` and `@dockline/langchain-provider`: LangChain adapter
   and bridge package.
@@ -29,13 +36,18 @@ model connector layer for JS/TS agents.
 ```bash
 npm install
 npm run build
-npx tsx examples/provider-picker.ts
+node --test test/catalog.test.mjs
 ```
 
-The provider-picker example is dry-run by default. It lists available providers,
-auth modes, runtime controls, and the redacted config that would be used.
+Catalog usage:
 
-Live OpenRouter stream:
+```ts
+import { listCatalogProviders } from "@dockline/catalog";
+
+const providers = listCatalogProviders();
+```
+
+Live OpenRouter stream through the existing example:
 
 ```bash
 DOCKLINE_RUN=1 \
@@ -47,13 +59,13 @@ npx tsx examples/provider-picker.ts
 
 ## Known Alpha Limits
 
+- Catalog presence does not mean an executable connector is already installed.
+- The connector resolver is planned next.
 - Provider metadata is provider-level guidance, not a model capability catalog.
 - LangChain-backed provider packages require their optional peer dependencies
   for live calls.
-- OAuth/PKCE and device-code contracts are alpha-only and provider-neutral;
-  no official-auth connector or CLI is shipped yet.
-- OpenAI-compatible presets share the generic transport. Native provider
-  packages may be added later where provider-specific behavior justifies it.
+- OAuth/PKCE and device-code contracts are alpha-only and provider-neutral; no
+  official-auth connector or CLI is shipped yet.
 - `npm publish` is not automated from this repo.
 
 ## Publish Checklist
@@ -67,12 +79,10 @@ npm test
 npm run pack:dry-run
 ```
 
-Then publish workspaces intentionally:
+Then publish workspaces intentionally after a version bump:
 
 ```bash
 npm publish --workspaces --access public --tag alpha
 ```
 
-Only publish after confirming the `@dockline/*` package names and npm account
-permissions. This operation is external and should remain an explicit human
-decision.
+Publishing remains an explicit human decision.

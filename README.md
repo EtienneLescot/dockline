@@ -1,28 +1,85 @@
 # Dockline
 
-Dockline is a capability-aware model connector layer for JS/TS agentic applications.
+Dockline is an open provider catalog and connector resolver for JS/TS agentic
+applications.
 
-It is not an agent framework. It is the lower-level model/runtime connection layer that an agent, CLI, IDE extension, workflow orchestrator, or SaaS app can use to connect to model APIs, OpenAI-compatible endpoints, gateways, subscription-backed sources, and agent runtimes through explicit capabilities.
+It is not an agent framework, a provider SDK clone, or a hosted gateway. It is
+the code-side layer an application uses to offer users a clean provider picker:
+provider, auth method, model, runtime options, and then the best available
+connector backing.
 
 Alpha package: `0.1.0-alpha.1`.
 
-## Quickstart
+## Product Promise
 
-Install the core package and at least one provider package:
+A developer should be able to plug Dockline into an agentic app and expose model
+access choices such as:
+
+- OpenAI with an API key
+- Anthropic with an API key
+- Google Gemini with an API key
+- OpenRouter with an OpenRouter key
+- Vercel AI Gateway with Vercel Gateway credentials
+- a local OpenAI-compatible endpoint
+- a ChatGPT account through official OAuth/device flows when available
+- GitHub Copilot through official device flow or SDK-delegated auth
+
+Dockline's job is to aggregate the provider choices that already exist across
+Vercel AI SDK and LangChain, add the account-backed providers they do not solve
+cleanly, and expose one coherent integration surface to host applications.
+
+## Definitions
+
+A provider is whoever supplies model access credentials:
+
+- OpenAI is a provider.
+- OpenRouter is a provider/gateway.
+- Vercel AI Gateway is a provider/gateway.
+- Ollama and LM Studio are local runtime providers.
+- Vercel AI SDK is not a provider; it is an adapter library.
+- LangChain is not a provider; it is an adapter library.
+- Dockline is not a gateway SaaS; it is the open code-side aggregator.
+
+## Quickstart: Provider Picker Catalog
+
+Install the catalog package:
+
+```bash
+npm install @dockline/catalog
+```
+
+List provider choices for your picker:
+
+```ts
+import { listCatalogProviders } from "@dockline/catalog";
+
+const providers = listCatalogProviders();
+
+for (const provider of providers) {
+  console.log(provider.id, provider.displayName, {
+    kind: provider.providerKind,
+    authModes: provider.authModes,
+    sources: provider.sources.map((source) => source.id),
+    recommendedBacking: provider.recommendedBacking,
+  });
+}
+```
+
+Filter by UX need:
+
+```ts
+const gateways = listCatalogProviders({ providerKind: "gateway" });
+const accountBacked = listCatalogProviders({ source: "dockline-native" });
+const deviceCode = listCatalogProviders({ authMode: "device-code" });
+```
+
+## Quickstart: Existing Connector
+
+Dockline still ships executable connector packages. For example, OpenRouter:
 
 ```bash
 npm install @dockline/core @dockline/openrouter
 ```
-
-Register providers once at application startup, before calling `createModel`:
-
-```ts
-import { registerOpenRouterProvider } from "@dockline/openrouter";
-
-registerOpenRouterProvider();
-```
-
-Create a model with the registered provider id and call `generate` or `stream`:
 
 ```ts
 import { createModel } from "@dockline/core";
@@ -30,16 +87,10 @@ import { registerOpenRouterProvider } from "@dockline/openrouter";
 
 registerOpenRouterProvider();
 
-const apiKey = process.env.OPENROUTER_API_KEY;
-
-if (!apiKey) {
-  throw new Error("Set OPENROUTER_API_KEY before using OpenRouter.");
-}
-
 const model = await createModel({
   provider: "openrouter",
   model: "openai/gpt-4o-mini",
-  apiKey,
+  apiKey: process.env.OPENROUTER_API_KEY,
 });
 
 for await (const event of model.stream({
@@ -49,7 +100,7 @@ for await (const event of model.stream({
 }
 ```
 
-For any OpenAI-compatible `/chat/completions` endpoint, install and register the generic provider instead:
+For an OpenAI-compatible endpoint:
 
 ```bash
 npm install @dockline/core @dockline/openai-compatible
@@ -67,138 +118,66 @@ const model = await createModel({
   apiKey: process.env.OPENAI_COMPATIBLE_API_KEY,
   model: "my-model",
 });
-
-const result = await model.generate({
-  messages: [{ role: "user", content: "Explain Dockline in one sentence." }],
-});
-
-console.log(result.text);
 ```
 
-To delegate long-tail provider coverage to the Vercel AI SDK, wrap any AI SDK
-`LanguageModelV3` provider with `@dockline/ai-sdk`:
+## Backing Strategy
 
-```bash
-npm install @dockline/core @dockline/ai-sdk @ai-sdk/openai
-```
+Dockline does not want to own provider API debt when good upstream adapters
+already exist.
 
-```ts
-import { openai } from "@ai-sdk/openai";
-import { createModel, globalProviderRegistry } from "@dockline/core";
-import { createAISDKChatProvider } from "@dockline/ai-sdk";
+The pragmatic strategy is:
 
-globalProviderRegistry.set(createAISDKChatProvider({
-  id: "openai-ai-sdk",
-  displayName: "OpenAI via AI SDK",
-  metadata: { authModes: ["api-key"] },
-  createLanguageModel: (config) => openai(config.model),
-}));
+1. Use Vercel AI SDK providers as the primary upstream directory/backing.
+2. Add LangChain JS chat providers missing from AI SDK.
+3. Treat gateways as real user-selectable providers.
+4. Build Dockline-native connectors only for gaps: official OAuth/device flows,
+   account-backed access, IDE environment APIs, and agent runtimes.
 
-const model = await createModel({
-  provider: "openai-ai-sdk",
-  model: "gpt-4.1-mini",
-});
-```
+## Current Packages
 
-## Why
-
-Every JS agent framework still makes you bring your own model glue:
-
-- provider configuration
-- authentication differences
-- streaming formats
-- tool calling formats
-- structured output support
-- capability detection
-- OpenAI-compatible endpoints and gateways
-- future subscription-backed connectors such as Codex, Copilot, or VS Code LM
-
-Dockline keeps that concern separate from agent orchestration.
-
-## Design Principles
-
-- TypeScript first
-- framework agnostic
-- capability-aware, not provider-flat
-- modular providers
-- no required dependency on Vercel, LangChain, Next.js, or any agent framework
-- no token scraping or private endpoint workarounds
-- honest capability reporting instead of pretending every model can do everything
-
-## Packages
-
-Current alpha packages:
-
-- `@dockline/core`: common interfaces, message types, events, capabilities, errors, provider registry
-- `@dockline/openai-compatible`: generic OpenAI-compatible chat completions connector
-- `@dockline/openrouter`: OpenRouter provider built on the OpenAI-compatible connector
-- `@dockline/catalog`: provider-picker catalog aggregated from AI SDK, LangChain, and Dockline-native gaps
+- `@dockline/catalog`: user-facing provider catalog aggregated from AI SDK,
+  LangChain, and Dockline-native gaps
+- `@dockline/core`: common contracts, registry, messages, streaming events,
+  normalized errors, discovery hooks, and token-store interfaces
 - `@dockline/ai-sdk`: structural Vercel AI SDK `LanguageModelV3` bridge
-- `@dockline/langchain`: structural LangChain/LangGraph JS adapter for Dockline chat models
+- `@dockline/langchain`: structural LangChain/LangGraph JS adapter
 - `@dockline/langchain-provider`: structural LangChain-to-Dockline provider bridge
-- `@dockline/providers`: explicit provider factory imports for provider-picker UX
-- `@dockline/all`: optional convenience bundle for listing or registering every provider
-- `@dockline/openai`: LangChain-backed OpenAI API-key provider
-- `@dockline/anthropic`: LangChain-backed Anthropic API-key provider
-- `@dockline/google`: LangChain-backed Google Gemini API-key provider
-- `@dockline/mistral`: LangChain-backed Mistral API-key provider
+- `@dockline/openai-compatible`: generic OpenAI-compatible chat completions connector
+- `@dockline/openrouter`: OpenRouter connector built on the OpenAI-compatible transport
+- `@dockline/providers`: current explicit executable provider factories
+- `@dockline/all`: convenience bundle that re-exports the catalog and current providers
+- `@dockline/openai`, `@dockline/anthropic`, `@dockline/google`,
+  `@dockline/mistral`: current LangChain-backed API-key provider packages
 
-Planned packages:
+## Non-Goals
 
-- `@dockline/codex`
-- `@dockline/github-copilot`
-- `@dockline/vscode-lm`
-- `@dockline/deepagents`
+Dockline is not:
 
-## MVP Scope
-
-Phase 0:
-
-- core TypeScript interfaces
-- streaming event model
-- capabilities
-- normalized errors
-- provider registry
-- config validation
-
-Phase 1:
-
-- OpenAI-compatible endpoint support
-- OpenRouter support
-- adapter for at least one agent framework
-
-Phase 2:
-
-- token store interfaces
-- CLI auth flows where supported by official/documented APIs
-- Codex/Copilot connectors only when a robust legal path exists
-
-## Safety Boundary
-
-Dockline must not use scraped tokens, private undocumented endpoints, or provider ToS workarounds. Subscription-backed connectors belong behind explicit provider packages and must rely on documented flows, official SDKs, or environment APIs.
+- an agent framework
+- a LangChain clone
+- a Vercel AI SDK clone
+- a LiteLLM clone
+- a SaaS gateway
+- a GUI
+- a token scraper
+- a private endpoint workaround
+- a market-wide database of every model capability
 
 ## Design Docs
 
+- [Product spec](docs/product-spec.md): new product positioning and success criteria.
 - [Provider catalog](docs/provider-catalog.md): user-facing provider list, source calculation, gateway treatment, and catalog metadata.
-- [Provider routing](docs/provider-routing.md): provider package strategy, optional `@dockline/all`, and provider-picker metadata.
-- [Provider discovery](docs/discovery.md): provider metadata, connection testing, model listing, and picker examples.
+- [Provider routing](docs/provider-routing.md): connector resolver plan and backing selection.
+- [Provider coverage](docs/provider-coverage.md): upstream directory and coverage strategy.
+- [Provider discovery](docs/discovery.md): connection testing, model listing, and picker flow.
 - [Auth UX design](docs/auth-design.md): API-key, OAuth/device/headless, Copilot, and token-plan auth boundaries.
 - [Alpha release notes](docs/release-alpha.md): current package surface, known limits, and publish checklist.
-
-## Examples
-
-```bash
-npm run build
-npx tsx examples/provider-picker.ts
-```
-
-The provider-picker example runs as a dry-run by default. Set `DOCKLINE_RUN=1`
-and provider credentials to create a model and stream a response.
 
 ## Development
 
 ```bash
 npm install
+npm run build
 npm test
 npm run typecheck
 ```

@@ -1,7 +1,7 @@
 {
   "name": "@dockline/providers",
   "version": "0.1.0-alpha.1",
-  "description": "Explicit provider factory imports for Dockline.",
+  "description": "Explicit executable provider factories for Dockline.",
   "type": "module",
   "license": "MIT",
   "repository": {

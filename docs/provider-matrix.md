@@ -1,13 +1,13 @@
 # Connector And Provider Matrix
 
-This matrix tracks what Dockline can connect today, what the current packages
-implement, and what is only planned. It is intentionally conservative for the
-`0.1.0-alpha.0` line: a provider, auth mode, or capability is marked implemented
-only when there is code in this repository for it.
+This matrix tracks the difference between Dockline's user-facing catalog and
+the executable connector packages currently implemented. A provider, auth mode,
+or capability is marked implemented only when there is code in this repository
+for it.
 
 This is not an exhaustive model capability catalog. The product goal is to help
-applications expose provider choice and official auth paths, then surface the
-runtime capabilities of the selected model or runtime.
+applications expose provider choice, resolve the right connector backing, and
+surface the runtime capabilities of the selected model or runtime.
 
 ## Status Legend
 
@@ -37,9 +37,9 @@ native Dockline packages should fill major gaps and official auth modes.
 
 | Provider area | API-key path | Official OAuth/device-code/account path | Intended strategy |
 | --- | --- | --- | --- |
-| OpenAI | Planned native package or broad provider adapter. | Planned only through official documented flows. | Native package likely needed for first-class auth/runtime behavior. |
-| Google Gemini | Planned native package or broad provider adapter. | Planned only through official documented flows. | Start with API-key support, then official account auth if suitable for agent apps. |
-| Anthropic | Planned native package or broad provider adapter. | Planned only through official documented flows. | API-key support can likely come from adapter; native package if auth/runtime gaps appear. |
+| OpenAI | Catalog entry plus current LangChain-backed provider; AI SDK backing planned through resolver. | Planned only through official documented flows. | API-key can be delegated; account-backed ChatGPT access needs native/official flow. |
+| Google Gemini | Catalog entry plus current LangChain-backed provider; AI SDK backing planned through resolver. | Planned only through official documented flows. | API-key can be delegated; account/cloud auth only if appropriate and documented. |
+| Anthropic | Catalog entry plus current LangChain-backed provider; AI SDK backing planned through resolver. | Planned only through official documented flows. | API-key can be delegated; native package only if auth/runtime gaps appear. |
 | DeepSeek | Implemented as an OpenAI-compatible preset in `@dockline/providers`. | Unknown/planned only if officially documented. | Native only if provider-specific behavior exceeds the generic transport. |
 | Moonshot AI | Implemented as an OpenAI-compatible preset in `@dockline/providers`. | Unknown/planned only if officially documented. | Native only if auth/runtime behavior requires it. |
 | MiniMax | Implemented as an OpenAI-compatible preset in `@dockline/providers`. | Token Plan/account behavior remains planned only if officially documented. | Native if Token Plan, Anthropic-compatible behavior, or interleaved-thinking semantics need separate handling. |
@@ -49,7 +49,7 @@ native Dockline packages should fill major gaps and official auth modes.
 
 ## Alpha Default Capability Profiles
 
-The rows below are documentation defaults for the `0.1.0-alpha.0` package
+The rows below are documentation defaults for the current alpha package
 behavior. They are not complete model catalogs and do not guarantee that a
 specific model, routed provider, deployment, or account entitlement supports a
 feature. Runtime config overrides and provider errors remain authoritative.

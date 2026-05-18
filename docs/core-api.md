@@ -1,8 +1,8 @@
 # Dockline Core API
 
-`@dockline/core` is the stable public boundary for model providers, chat model
-contracts, messages, capabilities, normalized errors, and provider registry
-helpers.
+`@dockline/core` is the stable public boundary for executable model providers,
+chat model contracts, messages, capabilities, normalized errors, discovery
+hooks, auth primitives, and provider registry helpers.
 
 ## Stable API
 
@@ -53,8 +53,9 @@ package and common runtime controls; model-specific capabilities still come from
 model discovery, provider responses, or capability profiles.
 
 Use `listProviderMetadata(registry)` or `listAvailableProviders(registry)` to
-get normalized catalog entries. Providers without metadata are included with
-fallback values derived from the registered provider:
+inspect executable providers registered in the current process. For the broader
+user-facing picker catalog, use `@dockline/catalog`. Providers without metadata
+are included with fallback values derived from the registered provider:
 
 - `id` comes from `provider.id`.
 - `displayName` comes from `provider.displayName` or the provider id.

@@ -1,7 +1,11 @@
 # Provider Discovery
 
-Dockline discovery is an optional provider contract for checking credentials and
-listing available models without constructing a chat model.
+Dockline discovery is an optional executable-provider contract for checking
+credentials and listing available models without constructing a chat model.
+
+For the broad user-facing provider picker, start with `@dockline/catalog`.
+Discovery runs after a catalog entry has been resolved to an installed
+executable provider/backing.
 
 ## Core Types
 
@@ -89,19 +93,22 @@ for (const provider of providers) {
 A provider picker should separate static metadata from account-specific
 discovery:
 
-1. Register candidate providers at application startup.
-2. Call `listProviderMetadata()` to show provider names, backing type, supported
-   auth modes, and whether connection testing/model discovery are available.
-3. Let the user choose an auth mode from `metadata.authModes`.
-4. Build a `ProviderDiscoveryConfig` from the chosen provider, auth mode,
+1. List candidate providers with `@dockline/catalog`.
+2. Resolve the chosen catalog provider to an installed executable provider.
+3. Register or retrieve that provider in the application registry.
+4. Call `listProviderMetadata()` for installed-provider details such as backing
+   type, supported auth modes, and whether connection testing/model discovery
+   are available.
+5. Let the user choose an auth mode from catalog/provider metadata.
+6. Build a `ProviderDiscoveryConfig` from the chosen provider, auth mode,
    credential fields, base URL, headers, and provider-specific fields.
-5. Call `testProviderConnection()` once a model id is known, or with a default
+7. Call `testProviderConnection()` once a model id is known, or with a default
    model id when the provider requires one for validation.
-6. Call `listProviderModels()` to fetch the models visible to the configured
+8. Call `listProviderModels()` to fetch the models visible to the configured
    account, endpoint, region, and auth mode.
-7. Let the user choose a model and runtime options from provider metadata plus
+9. Let the user choose a model and runtime options from provider metadata plus
    the selected model's capabilities.
-8. Pass the selected values to `createModel()`. Request-level sampling,
+10. Pass the selected values to `createModel()`. Request-level sampling,
    reasoning, output, and provider-specific options belong in
    `GenerateInput.providerOptions` unless a provider documents a config-level
    field.

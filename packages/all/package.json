@@ -1,7 +1,7 @@
 {
   "name": "@dockline/all",
   "version": "0.1.0-alpha.1",
-  "description": "Optional convenience bundle for registering every Dockline provider.",
+  "description": "Convenience bundle for Dockline catalog, bridges, and current provider factories.",
   "type": "module",
   "license": "MIT",
   "repository": {

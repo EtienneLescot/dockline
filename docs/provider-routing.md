@@ -1,245 +1,166 @@
-# Provider Routing Plan
+# Provider Routing And Resolver
 
-Dockline should present one provider/model/auth surface to integrators while
+Dockline should present one provider/auth/model surface to integrators while
 using the best available backing implementation internally.
 
-The integrator should not need to know whether a provider is implemented through
-LangChain, Vercel AI SDK, OpenAI-compatible transport, or a native Dockline
-connector. That routing decision belongs inside Dockline.
+The integrator should not need to know whether a provider is executed through
+Vercel AI SDK, LangChain, Dockline's OpenAI-compatible transport, a gateway
+connector, or a native account-backed connector.
 
-The upstream coverage decision is documented in
-[Provider Coverage Strategy](provider-coverage.md). The short version is:
-LangChain first for the initial broad API-key provider set, OpenAI-compatible
-transport for base-URL providers, and native Dockline packages for missing
-providers, official auth, and provider behavior that a generic upstream adapter
-cannot safely own.
+## Layers
 
-## Internal Provider Map
+Dockline separates three concepts:
 
-Initial target map:
+1. **Catalog entry**: user-facing provider metadata from `@dockline/catalog`.
+2. **Connector resolver**: chooses an executable backing for a catalog entry.
+3. **Provider implementation**: actual `ModelProvider` registered in
+   `@dockline/core`.
 
-| Dockline provider id | Preferred backing implementation | Auth modes target | Notes |
-| --- | --- | --- | --- |
-| `anthropic` | `@langchain/anthropic` first | API key first; official account auth only if documented | Use LangChain for initial API-key coverage. Native package only if Dockline needs auth/runtime behavior not exposed upstream. |
-| `openai` | `@langchain/openai` first | API key; OAuth/PKCE/device flow only through official documented flows | Native Dockline package likely needed for official account auth and richer reasoning/runtime behavior. |
-| `google` | `@langchain/google-genai` first | API key first; official Google auth only if appropriate and documented for this use case | Keep Gemini API key path separate from any Google account/cloud flow. |
-| `mistral` | `@langchain/mistralai` first | API key first | Native Dockline package only if upstream coverage is insufficient. |
-| `openrouter` | OpenAI-compatible transport with OpenRouter base URL | API key | Already implemented as `@dockline/openrouter`. |
-| `openai-compatible` | OpenAI-compatible transport with custom base URL | API key/custom headers | Already implemented as `@dockline/openai-compatible`. |
-| `openai-oauth` | `@dockline/openai-oauth` | OAuth/PKCE or official device/headless flow if available | Separate from API-key `openai` so sensitive auth stays isolated. |
-| `copilot` | `@dockline/copilot` | Official device flow or SDK-delegated auth only | No token scraping or private endpoint dependency. |
-| `minimax` | Upstream provider adapter if available; otherwise `@dockline/minimax` | API key first | Native package if LangChain/Vercel/another maintained dependency lacks robust support. |
-| `minimax-token-plan` | Upstream provider adapter if available; otherwise `@dockline/minimax-token-plan` | Official token-plan/subscription flow only if documented | Keep subscription/account-backed behavior separate from simple API-key MiniMax. |
-| `deepseek` | Upstream provider adapter if available; otherwise `@dockline/deepseek` | API key first | Native package if needed. |
-| `moonshot` | Upstream provider adapter if available; otherwise `@dockline/moonshot` | API key first; official account flow only if documented | Native package if needed. |
-| `alibaba` | Upstream provider adapter if available; otherwise `@dockline/alibaba` | API key/cloud credentials first | Should cover Qwen/DashScope-style access without making Dockline a cloud SDK. |
+This separation is what keeps Dockline useful without making it a giant
+handwritten provider implementation project.
 
-This table is a routing plan, not a promise that all packages exist today.
-Before implementing each row, verify the current upstream package status and
-provider terms.
+## Provider Definition
 
-Vercel AI SDK remains a valid future backing where it is materially better for a
-provider or host runtime, but it should not be the initial broad coverage layer
-for the same provider ids.
+A provider is the party that supplies credentials or runtime access.
 
-## Integrator API Shape
+- OpenAI: API provider.
+- OpenRouter: gateway provider.
+- Vercel AI Gateway: gateway provider.
+- LM Studio: local runtime provider.
+- GitHub Copilot: account-backed provider.
+- Vercel AI SDK: adapter library, not a provider.
+- LangChain: adapter library, not a provider.
 
-The integrator-facing API should optimize for two modes:
+## Resolver Input
 
-1. Explicit imports for applications that want tight bundles and clear provider
-   ownership.
-2. A batteries-included import for applications that want the full provider
-   picker experience quickly.
-
-Possible explicit shape:
+Target shape:
 
 ```ts
-import { createModel } from "@dockline/core";
-import { openai, google, minimax, openrouter } from "@dockline/providers";
-
-const dockline = createDockline({
-  providers: [
-    openai(),
-    google(),
-    minimax(),
-    openrouter(),
-  ],
-});
-
-const providers = await dockline.listProviders();
-```
-
-Possible batteries-included shape:
-
-```ts
-import { createDockline, allProviders } from "@dockline/all";
-
-const dockline = createDockline({
-  providers: allProviders(),
-});
-
-const providers = await dockline.listProviders();
-```
-
-`@dockline/all` should be convenient, but it should not be the only path. Many
-integrators will prefer explicit imports to avoid pulling provider dependencies
-they do not expose.
-
-## `@dockline/all` Package Contract
-
-`@dockline/all` is an optional convenience package for apps that want a complete
-provider picker without choosing provider packages one by one. It should compose
-the same provider factories available through explicit packages; it should not
-define a separate provider model or hide different behavior behind the same ids.
-
-Target exports:
-
-```ts
-export { createDockline, createModel } from "@dockline/core";
-export type {
-  Dockline,
-  ProviderMetadata,
-  ProviderAuthMode,
-  RuntimeOptionDescriptor,
-} from "@dockline/core";
-
-export { allProviders, defaultProviderPolicy } from "./providers";
-export type { AllProvidersOptions, ProviderPolicy } from "./providers";
-
-export {
-  openai,
-  anthropic,
-  google,
-  mistral,
-  openrouter,
-  openaiCompatible,
-  minimax,
-  deepseek,
-  moonshot,
-  alibaba,
-} from "@dockline/providers";
-```
-
-`allProviders(options?)` should return provider registrations, not mutate global
-state. Options should allow host applications to exclude provider families,
-disable account-backed auth packages, and choose whether optional heavyweight
-backings such as LangChain or Vercel AI SDK adapters are included.
-
-Suggested option shape:
-
-```ts
-type AllProvidersOptions = {
-  include?: string[];
-  exclude?: string[];
-  auth?: {
-    apiKey?: boolean;
-    accountBacked?: boolean;
-    environmentProvided?: boolean;
+type ResolveConnectorInput = {
+  provider: string;
+  authMode?: ProviderAuthMode;
+  preferredBacking?: ProviderBacking;
+  environment?: {
+    node?: boolean;
+    browser?: boolean;
+    edge?: boolean;
+    vscode?: boolean;
   };
-  backing?: {
-    native?: boolean;
-    langchain?: boolean;
-    vercelAiSdk?: boolean;
-    openaiCompatible?: boolean;
-  };
+  installedPackages?: string[];
 };
 ```
 
-Default behavior should favor predictable provider-picker coverage:
+## Resolver Output
 
-- include stable API-key providers and OpenAI-compatible/gateway providers;
-- exclude experimental account-backed connectors unless the integrator opts in;
-- expose metadata for unavailable optional flows instead of pretending they are
-  ready;
-- preserve provider ids used by explicit imports.
-
-`@dockline/all` should not be a dependency of `@dockline/core` or individual
-provider packages. It is a leaf package.
-
-## Dependency And Bundle Tradeoffs
-
-The optional package exists because provider coverage and bundle discipline pull
-in opposite directions.
-
-Explicit imports are the recommended default for production apps with known
-provider lists. They keep install size, transitive dependencies, audit surface,
-edge-runtime compatibility, and bundle output narrow.
-
-`@dockline/all` is useful for CLIs, desktop apps, local tools, admin panels,
-examples, and hosted provider-picker products where broad discovery matters more
-than minimal dependency graphs. It may depend on broad upstream provider
-libraries and native Dockline connectors that an explicit-import app would never
-install.
-
-Bundler expectations:
-
-- mark provider modules as side-effect-free where possible;
-- keep account-backed auth connectors split so they can be excluded;
-- avoid importing Node-only token-store code from browser-safe provider modules;
-- document any provider that cannot run in browser, edge, or serverless targets;
-- prefer lazy provider initialization so listing providers does not immediately
-  load SDK clients, read secrets, or start auth flows.
-
-## End-User Flow
-
-The target application UX is:
-
-1. User chooses a provider, for example OpenAI.
-2. User chooses a connection type:
-   - API key
-   - OAuth/PKCE when officially supported
-   - device flow/headless device flow when officially supported
-   - environment/IDE-provided auth where applicable
-3. Dockline tests the connection.
-4. Dockline lists available models when the provider supports discovery.
-5. User chooses a model.
-6. Dockline exposes runtime options for that model, including reasoning controls
-   when supported:
-   - none/unsupported
-   - low/medium/high style effort
-   - token/budget style controls
-   - provider-specific options under a namespaced escape hatch
-7. The host application enables workflows based on the selected model/runtime
-   capabilities.
-
-The key is that reasoning level is a runtime option attached to the selected
-provider/model, not a universal Dockline promise.
-
-Detailed auth UX, storage, and provider terms boundaries are specified in
-[Auth UX Design](auth-design.md).
-
-## Provider Metadata Needed
-
-To support that UX, each installed provider should expose metadata such as:
+Target shape:
 
 ```ts
-type ProviderMetadata = {
-  id: string;
-  displayName: string;
-  description?: string;
-  backing?: "native" | "langchain" | "vercel-ai-sdk" | "openai-compatible" | "gateway";
-  authModes: ProviderAuthMode[];
-  supportsModelDiscovery: boolean;
-  supportsConnectionTest: boolean;
-  runtimeOptions?: RuntimeOptionDescriptor[];
-};
+type ResolveConnectorResult =
+  | {
+      ok: true;
+      provider: ModelProvider;
+      catalogProvider: ProviderCatalogEntry;
+      backing: ProviderBacking;
+      requiredPackages: string[];
+    }
+  | {
+      ok: false;
+      status:
+        | "unknown-provider"
+        | "unsupported-auth-mode"
+        | "unsupported-environment"
+        | "missing-package"
+        | "planned-native"
+        | "unsupported";
+      provider: string;
+      message: string;
+      requiredPackages?: string[];
+      availableBackings?: ProviderBacking[];
+    };
 ```
 
-This metadata is for provider picker UX. It is not a model capability database.
-Core exposes `listProviderMetadata()` and `listAvailableProviders()` so host
-applications can list installed providers even when older provider packages have
-not added explicit metadata yet.
+The resolver should fail clearly when a catalog entry is not executable yet.
+Catalog presence is not the same thing as runtime availability.
 
-## Implementation Rules
+## Backing Priority
 
-- Prefer LangChain JS provider packages for the first broad API-key coverage
-  pass over `anthropic`, `openai`, `google`, and `mistral`.
-- Keep Vercel AI SDK as a secondary backing or ecosystem adapter until Dockline
-  has a stable provider metadata and runtime-option contract.
-- Build native Dockline connectors when a major provider is missing upstream,
-  upstream behavior is insufficient, or official auth flows are not supported.
-- Keep account-backed auth packages isolated from API-key packages.
-- Treat model capabilities as runtime/discovery output, not a giant static
-  table maintained in core.
-- Keep provider-specific escape hatches namespaced so advanced users can still
-  access provider features without polluting the common API.
+Default backing priority:
+
+1. Native Dockline connector, when the provider needs account-backed auth,
+   official environment auth, or special runtime behavior.
+2. Dockline gateway/OpenAI-compatible connector, when the selected provider is a
+   gateway or custom endpoint already covered by Dockline transport.
+3. Vercel AI SDK, as the primary broad provider backing.
+4. LangChain, as complement for providers not covered by AI SDK or where an app
+   explicitly wants LangChain behavior.
+5. Custom host-provided provider.
+
+Host applications should be able to override this priority.
+
+## Gateway Rules
+
+Gateways are user-selected providers:
+
+| Provider | User credential | Resolver backing |
+| --- | --- | --- |
+| `openrouter` | OpenRouter key | Dockline gateway connector first; AI SDK/LangChain optional |
+| `vercel-ai-gateway` | Vercel Gateway credentials | AI SDK Gateway provider first |
+| `openai-compatible` | Endpoint-specific key/header | Dockline OpenAI-compatible transport first |
+| `portkey` | Portkey key | AI SDK/community provider until native needed |
+| `requesty` | Requesty key | AI SDK/community provider until native needed |
+| `langdb` | LangDB key | AI SDK/community provider until native needed |
+
+Gateway model discovery is scoped to the gateway account. It must not be
+presented as direct upstream-provider discovery.
+
+## Account-Backed Rules
+
+Account-backed providers must be native or SDK-delegated and isolated from
+API-key provider packages.
+
+Targets:
+
+- `openai-chatgpt-account`
+- `github-copilot`
+- `vscode-lm`
+- `codex-cli`
+
+Rules:
+
+- documented flows only;
+- no token scraping;
+- no private endpoints;
+- no silent token persistence;
+- explicit host-provided `TokenStore` for persistence;
+- clear scopes and logout/status behavior.
+
+## `@dockline/all`
+
+`@dockline/all` should remain a convenience package. It can re-export:
+
+- the catalog;
+- current executable provider factories;
+- resolver helpers;
+- optional bridge helpers.
+
+It should not be the only integration path. Production apps with known provider
+sets should be able to use explicit imports.
+
+## Implementation Order
+
+1. Keep `@dockline/catalog` as source of truth for provider picker metadata.
+2. Add resolver types and a minimal resolver implementation.
+3. Resolve currently implemented providers first:
+   - `openrouter`
+   - `openai-compatible`
+   - `openai`
+   - `anthropic`
+   - `google`
+   - `mistral`
+   - OpenAI-compatible presets
+4. Resolve one AI SDK-backed provider through `@dockline/ai-sdk`.
+5. Add Vercel AI Gateway as a gateway provider.
+6. Add missing-package diagnostics for catalog entries not executable in the
+   current install.
+7. Add native account-backed connectors only after official auth flows are
+   confirmed.

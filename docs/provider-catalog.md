@@ -26,7 +26,7 @@ Examples:
 The catalog is computed pragmatically:
 
 1. Use Vercel AI SDK providers as the primary upstream directory, because its
-   provider contract maps well to Dockline's JS/TS model connector layer.
+   provider contract maps well to Dockline's JS/TS connector resolver.
 2. Add LangChain JS chat-model providers that are missing from the AI SDK
    directory.
 3. Add Dockline-native account-backed providers that neither upstream directory

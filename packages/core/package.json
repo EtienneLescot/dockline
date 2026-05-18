@@ -1,7 +1,7 @@
 {
   "name": "@dockline/core",
   "version": "0.1.0-alpha.1",
-  "description": "Core interfaces, model types, capabilities, and provider registry for Dockline.",
+  "description": "Core contracts, registry, discovery, auth, and runtime types for Dockline.",
   "type": "module",
   "license": "MIT",
   "repository": {

@@ -2,7 +2,7 @@
   "name": "dockline",
   "private": true,
   "version": "0.1.0-alpha.1",
-  "description": "Capability-aware model connector layer for JS/TS agents.",
+  "description": "Open provider catalog and connector resolver for JS/TS agents.",
   "type": "module",
   "license": "MIT",
   "repository": {
