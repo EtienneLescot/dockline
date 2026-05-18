@@ -73,6 +73,31 @@ const accountBacked = listCatalogProviders({ source: "dockline-native" });
 const deviceCode = listCatalogProviders({ authMode: "device-code" });
 ```
 
+## Quickstart: Connector Resolver
+
+The catalog tells you what can be shown in a picker. The resolver tells you
+whether the current install can execute that provider.
+
+```bash
+npm install @dockline/all
+```
+
+```ts
+import { resolveAllConnector } from "@dockline/all";
+
+const resolved = resolveAllConnector({
+  provider: "openrouter",
+  authMode: "api-key",
+});
+
+if (!resolved.ok) {
+  throw new Error(resolved.message);
+}
+
+// Register or use resolved.provider with @dockline/core.
+console.log(resolved.provider.id, resolved.backing);
+```
+
 ## Quickstart: Existing Connector
 
 Dockline still ships executable connector packages. For example, OpenRouter:
@@ -137,6 +162,7 @@ The pragmatic strategy is:
 
 - `@dockline/catalog`: user-facing provider catalog aggregated from AI SDK,
   LangChain, and Dockline-native gaps
+- `@dockline/resolver`: maps catalog providers to executable connector backings
 - `@dockline/core`: common contracts, registry, messages, streaming events,
   normalized errors, discovery hooks, and token-store interfaces
 - `@dockline/ai-sdk`: structural Vercel AI SDK `LanguageModelV3` bridge

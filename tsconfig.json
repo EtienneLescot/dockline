@@ -13,6 +13,7 @@
     { "path": "packages/openai" },
     { "path": "packages/openai-compatible" },
     { "path": "packages/openrouter" },
-    { "path": "packages/providers" }
+    { "path": "packages/providers" },
+    { "path": "packages/resolver" }
   ]
 }

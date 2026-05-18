@@ -18,6 +18,14 @@ import {
   openrouter,
   type ProviderFactory,
 } from "@dockline/providers";
+import {
+  createConnectorResolver,
+  resolveConnector,
+  type ConnectorCandidate,
+  type ConnectorResolver,
+  type ResolveConnectorInput,
+  type ResolveConnectorResult,
+} from "@dockline/resolver";
 
 export {
   alibaba,
@@ -61,6 +69,22 @@ export {
   type ProviderCatalogStatus,
   type ProviderKind,
 } from "@dockline/catalog";
+export {
+  createConnectorResolver,
+  listResolvableCatalogProviders,
+  resolveConnector,
+  type ConnectorCandidate,
+  type ConnectorCandidateStatus,
+  type ConnectorEnvironment,
+  type ConnectorEnvironmentName,
+  type ConnectorResolver,
+  type ConnectorResolverOptions,
+  type ResolveConnectorFailure,
+  type ResolveConnectorInput,
+  type ResolveConnectorResult,
+  type ResolveConnectorStatus,
+  type ResolveConnectorSuccess,
+} from "@dockline/resolver";
 
 export const allProviderFactories = {
   openrouter,
@@ -91,3 +115,90 @@ export const registerAllProviders = (
 
   return registry;
 };
+
+export const allConnectorCandidates = (): ConnectorCandidate[] => [
+  {
+    catalogProviderId: "openrouter",
+    backing: "gateway",
+    authModes: ["api-key"],
+    createProvider: openrouter,
+  },
+  {
+    catalogProviderId: "openai-compatible",
+    backing: "openai-compatible",
+    authModes: ["api-key", "custom"],
+    createProvider: openaiCompatible,
+  },
+  {
+    catalogProviderId: "openai",
+    backing: "langchain",
+    authModes: ["api-key"],
+    createProvider: openai,
+  },
+  {
+    catalogProviderId: "google",
+    backing: "langchain",
+    authModes: ["api-key"],
+    createProvider: google,
+  },
+  {
+    catalogProviderId: "anthropic",
+    backing: "langchain",
+    authModes: ["api-key"],
+    createProvider: anthropic,
+  },
+  {
+    catalogProviderId: "mistral",
+    backing: "langchain",
+    authModes: ["api-key"],
+    createProvider: mistral,
+  },
+  {
+    catalogProviderId: "minimax",
+    backing: "openai-compatible",
+    authModes: ["api-key"],
+    createProvider: minimax,
+  },
+  {
+    catalogProviderId: "deepseek",
+    backing: "openai-compatible",
+    authModes: ["api-key"],
+    createProvider: deepseek,
+  },
+  {
+    catalogProviderId: "moonshot",
+    backing: "openai-compatible",
+    authModes: ["api-key"],
+    createProvider: moonshot,
+  },
+  {
+    catalogProviderId: "alibaba",
+    backing: "openai-compatible",
+    authModes: ["api-key"],
+    createProvider: alibaba,
+  },
+  {
+    catalogProviderId: "github-copilot",
+    providerId: "copilot",
+    backing: "native",
+    authModes: ["device-code", "environment"],
+    status: "planned",
+    message: "GitHub Copilot device-flow support is planned but not implemented yet.",
+  },
+  {
+    catalogProviderId: "openai-chatgpt-account",
+    providerId: "openai-oauth",
+    backing: "native",
+    authModes: ["oauth", "device-code"],
+    status: "planned",
+    message: "OpenAI ChatGPT account auth is planned and will require official documented flows.",
+  },
+];
+
+export const createAllConnectorResolver = (): ConnectorResolver =>
+  createConnectorResolver({ candidates: allConnectorCandidates() });
+
+export const resolveAllConnector = (
+  input: ResolveConnectorInput,
+): ResolveConnectorResult =>
+  resolveConnector(input, { candidates: allConnectorCandidates() });

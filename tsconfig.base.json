@@ -25,7 +25,8 @@
       "@dockline/openai": ["packages/openai/src/index.ts"],
       "@dockline/openai-compatible": ["packages/openai-compatible/src/index.ts"],
       "@dockline/openrouter": ["packages/openrouter/src/index.ts"],
-      "@dockline/providers": ["packages/providers/src/index.ts"]
+      "@dockline/providers": ["packages/providers/src/index.ts"],
+      "@dockline/resolver": ["packages/resolver/src/index.ts"]
     }
   }
 }

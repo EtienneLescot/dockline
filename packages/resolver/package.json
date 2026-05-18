@@ -1,13 +1,13 @@
 {
-  "name": "@dockline/all",
+  "name": "@dockline/resolver",
   "version": "0.1.0-alpha.1",
-  "description": "Convenience bundle for Dockline catalog, bridges, and current provider factories.",
+  "description": "Connector resolver for Dockline catalog providers.",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/EtienneLescot/dockline.git",
-    "directory": "packages/all"
+    "directory": "packages/resolver"
   },
   "homepage": "https://github.com/EtienneLescot/dockline#readme",
   "bugs": {
@@ -16,9 +16,9 @@
   "keywords": [
     "ai",
     "agents",
+    "connector-resolver",
     "llm",
     "model-provider",
-    "providers",
     "typescript"
   ],
   "main": "./dist/index.js",
@@ -41,10 +41,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@dockline/ai-sdk": "0.1.0-alpha.1",
     "@dockline/catalog": "0.1.0-alpha.1",
-    "@dockline/core": "0.1.0-alpha.1",
-    "@dockline/providers": "0.1.0-alpha.1",
-    "@dockline/resolver": "0.1.0-alpha.1"
+    "@dockline/core": "0.1.0-alpha.1"
   }
 }

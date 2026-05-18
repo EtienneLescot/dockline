@@ -33,7 +33,7 @@ A provider is the party that supplies credentials or runtime access.
 
 ## Resolver Input
 
-Target shape:
+Implemented in `@dockline/resolver`:
 
 ```ts
 type ResolveConnectorInput = {
@@ -52,7 +52,7 @@ type ResolveConnectorInput = {
 
 ## Resolver Output
 
-Target shape:
+Implemented in `@dockline/resolver`:
 
 ```ts
 type ResolveConnectorResult =
@@ -149,7 +149,7 @@ sets should be able to use explicit imports.
 ## Implementation Order
 
 1. Keep `@dockline/catalog` as source of truth for provider picker metadata.
-2. Add resolver types and a minimal resolver implementation.
+2. Keep `@dockline/resolver` as the backing-neutral resolver package.
 3. Resolve currently implemented providers first:
    - `openrouter`
    - `openai-compatible`
@@ -160,7 +160,7 @@ sets should be able to use explicit imports.
    - OpenAI-compatible presets
 4. Resolve one AI SDK-backed provider through `@dockline/ai-sdk`.
 5. Add Vercel AI Gateway as a gateway provider.
-6. Add missing-package diagnostics for catalog entries not executable in the
+6. Improve missing-package diagnostics for catalog entries not executable in the
    current install.
 7. Add native account-backed connectors only after official auth flows are
    confirmed.

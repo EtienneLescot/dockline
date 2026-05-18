@@ -12,6 +12,8 @@ the catalog pivot and avoid presenting Dockline as a generic provider SDK clone.
 
 - `@dockline/catalog`: user-facing provider catalog aggregated from Vercel AI
   SDK, LangChain, and Dockline-native account-backed gaps.
+- `@dockline/resolver`: backing-neutral connector resolver for catalog
+  providers.
 - `@dockline/core`: contracts, messages, streaming events, provider registry,
   discovery helpers, normalized errors, token stores, and alpha auth/runtime
   contracts.
@@ -60,7 +62,8 @@ npx tsx examples/provider-picker.ts
 ## Known Alpha Limits
 
 - Catalog presence does not mean an executable connector is already installed.
-- The connector resolver is planned next.
+- The connector resolver is initial/static; richer package and environment
+  diagnostics are planned next.
 - Provider metadata is provider-level guidance, not a model capability catalog.
 - LangChain-backed provider packages require their optional peer dependencies
   for live calls.

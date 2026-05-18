@@ -91,8 +91,8 @@ The missing layer is:
 Dockline should provide:
 
 - `@dockline/catalog` as the user-facing provider catalog;
-- connector resolver APIs that map a catalog entry and auth choice to an
-  executable backing;
+- `@dockline/resolver` APIs that map a catalog entry and auth choice to an
+  executable backing or a precise unsupported/missing-package/planned result;
 - adapters to Vercel AI SDK and LangChain;
 - native OpenAI-compatible and gateway connectors where useful;
 - official-auth native connectors for ChatGPT/OpenAI account access, GitHub

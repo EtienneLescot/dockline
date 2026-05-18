@@ -14,6 +14,7 @@
     { "path": "../google" },
     { "path": "../mistral" },
     { "path": "../openai" },
-    { "path": "../providers" }
+    { "path": "../providers" },
+    { "path": "../resolver" }
   ]
 }

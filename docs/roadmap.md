@@ -37,21 +37,12 @@ metadata without manually copying AI SDK and LangChain provider lists.
 
 Goal: turn catalog entries into executable connector choices.
 
-- Add a resolver contract that accepts:
-  - provider id
-  - auth mode
-  - requested backing, optional
-  - runtime environment hints
-  - installed package availability
-- Resolve providers to the best available backing:
-  - Vercel AI SDK
-  - LangChain
-  - Dockline OpenAI-compatible transport
-  - gateway-specific connector
-  - Dockline-native connector
-- Return clear unsupported/missing-package errors instead of pretending every
-  catalog entry is executable.
-- Keep `@dockline/core` free of AI SDK, LangChain, and provider SDK deps.
+- Expand the initial `@dockline/resolver` package from static candidates to
+  richer package/environment-aware resolution.
+- Add first-class install diagnostics and per-provider installation guidance.
+- Add backing-specific candidate factories for AI SDK and LangChain.
+- Keep returning clear unsupported/missing-package/planned errors instead of
+  pretending every catalog entry is executable.
 
 Deliverable: an app can select a catalog provider and get the correct executable
 provider registration or a precise install/configuration error.
@@ -166,17 +157,16 @@ that agent frameworks can embed instead of rebuilding.
 
 ## Immediate Tickets
 
-1. Add a connector resolver package or module.
-2. Connect `@dockline/catalog` entries to executable AI SDK provider factories.
-3. Add install/config docs generated from catalog entries.
-4. Add Vercel AI Gateway as an explicit gateway provider.
-5. Add smoke-test scripts that install from npm outside the monorepo.
-6. Prepare `0.1.0-alpha.2` with `@dockline/catalog`.
+1. Connect `@dockline/catalog` entries to executable AI SDK provider factories.
+2. Add install/config docs generated from catalog and resolver entries.
+3. Add Vercel AI Gateway as an explicit gateway provider.
+4. Add smoke-test scripts that install from npm outside the monorepo.
+5. Prepare `0.1.0-alpha.2` with `@dockline/catalog` and `@dockline/resolver`.
 
 ## Current Focus
 
 Next autonomous batch:
 
-- Connector resolver contract.
 - AI SDK executable backing for a small provider slice.
+- Resolver install diagnostics.
 - Gateway clarification docs and Vercel AI Gateway package/factory.

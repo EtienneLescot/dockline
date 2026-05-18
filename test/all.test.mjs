@@ -6,7 +6,9 @@ import {
   allProviderFactories,
   allProviders,
   createAISDKChatProvider,
+  createAllConnectorResolver,
   listCatalogProviderIds,
+  resolveAllConnector,
   registerAllProviders,
 } from "../packages/all/dist/index.js";
 
@@ -83,4 +85,18 @@ test("@dockline/all re-exports the AI SDK bridge without registering it as a con
 
 test("@dockline/all re-exports the provider catalog", () => {
   assert.ok(listCatalogProviderIds().includes("openai-chatgpt-account"));
+});
+
+test("@dockline/all resolves current executable and planned providers", () => {
+  const router = resolveAllConnector({ provider: "openrouter", authMode: "api-key" });
+  assert.equal(router.ok, true);
+  assert.equal(router.provider.id, "openrouter");
+  assert.equal(router.backing, "gateway");
+
+  const chatgpt = createAllConnectorResolver().resolve({
+    provider: "openai-chatgpt-account",
+    authMode: "oauth",
+  });
+  assert.equal(chatgpt.ok, false);
+  assert.equal(chatgpt.status, "planned-native");
 });
